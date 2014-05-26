@@ -12,10 +12,14 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -23,13 +27,14 @@ import android.util.Log;
 
 public class AuthenticatedWebClient {
 
-  private static final String TAG = "ACCOUNTINFO";
+  private static final String TAG = AuthenticatedWebClient.class.getName();
 
-  private static final String ACCOUNT_TYPE = "uk.ac.bournemouth.darwin.account";
+  static final String ACCOUNT_TYPE = "uk.ac.bournemouth.darwin.account";
 
   public static final String ACCOUNT_TOKEN_TYPE="uk.ac.bournemouth.darwin.auth";
 
   private static final String KEY_ASKED_FOR_NEW = "askedForNewAccount";
+  public static final String KEY_AUTH_BASE = "authbase";
 
   private static final String DARWIN_AUTH_COOKIE = "DWNID";
 
@@ -111,8 +116,11 @@ public class AuthenticatedWebClient {
 
   private DefaultHttpClient mHttpClient;
 
-  public AuthenticatedWebClient(Context context) {
+  private final String mAuthbase;
+
+  public AuthenticatedWebClient(Context context, String authbase) {
     mContext = context;
+    mAuthbase = authbase;
   }
 
   public HttpResponse execute(HttpUriRequest pRequest) throws ClientProtocolException, IOException {
@@ -121,7 +129,8 @@ public class AuthenticatedWebClient {
 
   private HttpResponse execute(HttpUriRequest pRequest, boolean retry) throws ClientProtocolException, IOException {
     final AccountManager accountManager =AccountManager.get(mContext);
-    mToken = getAuthToken(accountManager);
+    mToken = getAuthToken(accountManager, mAuthbase);
+    if (mToken==null) { return null; }
 
     if (mHttpClient==null) { mHttpClient = new DefaultHttpClient(); }
 
@@ -137,25 +146,44 @@ public class AuthenticatedWebClient {
     return result;
   }
 
-  private String getAuthToken(AccountManager accountManager) {
+  @SuppressWarnings("deprecation")
+  private String getAuthToken(AccountManager accountManager, String authbase) {
     if (mToken != null) return mToken;
 
-    Account[] accounts = accountManager.getAccountsByType(ACCOUNT_TYPE);
-    if (accounts.length==0) {
-      // TODO prompt for download and install of the account manager it it is not available.
-      if (mContext instanceof Activity) {
-        accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, null, (Activity)mContext, null, null);
-      } else {
-        // TODO something better
-        return null;
-      }
-      mAskedForNewAccount =true;
-      return null;
-    }
-    Account account = accounts[0];
+    Account account = ensureAccount(mContext, authbase);
+    if (account==null) { mAskedForNewAccount = true; }
 
+
+
+    AccountManagerCallback<Bundle> callback = new AccountManagerCallback<Bundle>() {
+
+      @Override
+      public void run(AccountManagerFuture<Bundle> pFuture) {
+        try {
+          Bundle b = pFuture.getResult();
+          if (b.containsKey(AccountManager.KEY_INTENT)) {
+            Intent i = (Intent) b.get(AccountManager.KEY_INTENT);
+            mContext.startActivity(i);
+          }
+        } catch (OperationCanceledException e) {
+          e.printStackTrace();
+        } catch (AuthenticatorException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    };
+    AccountManagerFuture<Bundle> result;
+    if (mContext instanceof Activity) {
+      result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, null, (Activity) mContext, callback , null);
+    } else {
+      result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, callback, null);
+    }
+    Bundle b;
     try {
-      return accountManager.blockingGetAuthToken(account, ACCOUNT_TOKEN_TYPE, false);
+//      return accountManager.blockingGetAuthToken(account, ACCOUNT_TOKEN_TYPE, false);
+      b = result.getResult();
     } catch (OperationCanceledException e) {
       Log.e(TAG, "Error logging in: ", e);
       return null;
@@ -166,6 +194,8 @@ public class AuthenticatedWebClient {
       Log.e(TAG, "Error logging in: ", e);
       return null;
     }
+    return b.getString(AccountManager.KEY_AUTHTOKEN);
+
   }
 
   void writeToBundle(Bundle pDest) {
@@ -175,6 +205,64 @@ public class AuthenticatedWebClient {
   void updateFromBundle(Bundle pSource) {
     if (pSource==null) return;
     mAskedForNewAccount = pSource.getBoolean(KEY_ASKED_FOR_NEW, false);
+  }
+
+  public static Account ensureAccount(Context pContext, String pSource) {
+    AccountManager accountManager = AccountManager.get(pContext);
+    Account[] accounts;
+    try {
+      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {pSource}, null, null).getResult();
+    } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
+      Log.e(TAG, "Failure to get account", e1);
+      return null;
+    }
+    if (accounts.length==0) {
+      final Bundle options;
+      if (pSource==null) {
+        options = null;
+      } else {
+        options = new Bundle(1);
+        Uri uri = Uri.parse(pSource);
+        String authbase = getAuthBase(uri);
+        options.putString(KEY_AUTH_BASE, authbase);
+      }
+      Bundle result;
+      try {
+        result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, pContext instanceof Activity ? ((Activity) pContext) : null, null, null).getResult();
+      } catch (OperationCanceledException | AuthenticatorException | IOException e) {
+        return null;
+      }
+      if (result.containsKey(AccountManager.KEY_INTENT)) {
+        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
+      } else if (result.containsKey(AccountManager.KEY_ACCOUNT_NAME)) {
+        String[] features = new String[] { pSource} ;
+        String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
+        Account[] candidates;
+        try {
+          candidates = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, features, null, null).getResult();
+        } catch (OperationCanceledException | AuthenticatorException | IOException e) {
+          return null;
+        }
+        for(Account candidate:candidates) {
+          if (name.equals(candidate.name)) {
+            return candidate;
+          }
+        }
+        return null;
+      }
+      return null;
+    }
+    Account account = accounts[0];
+    return account;
+  }
+
+  public static String getAuthBase(String uri) {
+    return getAuthBase(uri==null? null: Uri.parse(uri));
+  }
+
+  public static String getAuthBase(Uri uri) {
+    if (uri==null) { return null; }
+    return uri.getScheme()+"://"+uri.getHost()+"/accounts/";
   }
 
 }
