@@ -42,9 +42,13 @@ public class AuthenticatedWebClient {
 
     private static final int[] PORTS = new int[] {443};
     private final String aAuthToken;
+    private String aAuthbase;
+    private int aPort;
 
-    public DarwinCookie(String pAuthtoken) {
+    public DarwinCookie(String pAuthbase, String pAuthtoken, int pPort) {
+      aAuthbase = pAuthbase;
       aAuthToken = pAuthtoken;
+      aPort = pPort;
     }
 
     @Override
@@ -59,7 +63,7 @@ public class AuthenticatedWebClient {
 
     @Override
     public String getDomain() {
-      return "darwin.bournemouth.ac.uk";
+      return Uri.parse(aAuthbase).getHost();
     }
 
     @Override
@@ -79,7 +83,7 @@ public class AuthenticatedWebClient {
 
     @Override
     public int[] getPorts() {
-      return PORTS;
+      return new int[] { aPort };
     }
 
     @Override
@@ -104,7 +108,7 @@ public class AuthenticatedWebClient {
 
     @Override
     public boolean isSecure() {
-      return false;
+      return "https".equals(Uri.parse(aAuthbase).getScheme());
     }
 
   }
@@ -134,7 +138,7 @@ public class AuthenticatedWebClient {
 
     if (mHttpClient==null) { mHttpClient = new DefaultHttpClient(); }
 
-    mHttpClient.getCookieStore().addCookie(new DarwinCookie(mToken));
+    mHttpClient.getCookieStore().addCookie(new DarwinCookie(mAuthbase, mToken, pRequest.getURI().getPort()));
 
     final HttpResponse result = mHttpClient.execute(pRequest);
     if (result.getStatusLine().getStatusCode()==HttpURLConnection.HTTP_UNAUTHORIZED) {
