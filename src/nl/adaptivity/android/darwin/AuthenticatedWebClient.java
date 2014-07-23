@@ -122,8 +122,15 @@ public class AuthenticatedWebClient {
 
   private final String mAuthbase;
 
+  private Account mAccount;
+
   public AuthenticatedWebClient(Context context, String authbase) {
+    this(context, null, authbase);
+  }
+
+  public AuthenticatedWebClient(Context context, Account account, String authbase) {
     mContext = context;
+    mAccount = account;
     mAuthbase = authbase;
   }
 
@@ -154,7 +161,7 @@ public class AuthenticatedWebClient {
   private String getAuthToken(AccountManager accountManager, String authbase) {
     if (mToken != null) return mToken;
 
-    Account account = ensureAccount(mContext, authbase);
+    Account account = mAccount !=null ? mAccount : ensureAccount(mContext, authbase);
     if (account==null) { mAskedForNewAccount = true; }
 
 
@@ -237,7 +244,8 @@ public class AuthenticatedWebClient {
         return null;
       }
       if (result.containsKey(AccountManager.KEY_INTENT)) {
-        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
+        return null;
+//        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
       } else if (result.containsKey(AccountManager.KEY_ACCOUNT_NAME)) {
         String[] features = new String[] { pSource} ;
         String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
