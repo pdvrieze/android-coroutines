@@ -29,7 +29,7 @@ public class AuthenticatedWebClient {
 
   private static final String TAG = AuthenticatedWebClient.class.getName();
 
-  static final String ACCOUNT_TYPE = "uk.ac.bournemouth.darwin.account";
+  public static final String ACCOUNT_TYPE = "uk.ac.bournemouth.darwin.account";
 
   public static final String ACCOUNT_TOKEN_TYPE="uk.ac.bournemouth.darwin.auth";
 
@@ -149,6 +149,7 @@ public class AuthenticatedWebClient {
 
     final HttpResponse result = mHttpClient.execute(pRequest);
     if (result.getStatusLine().getStatusCode()==HttpURLConnection.HTTP_UNAUTHORIZED) {
+      result.getEntity().consumeContent(); // make sure to consume the entire error.
       if (! retry) { // Do not repeat retry
         accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
         return execute(pRequest, true);
@@ -224,8 +225,12 @@ public class AuthenticatedWebClient {
     try {
       accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {pSource}, null, null).getResult();
     } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
-      Log.e(TAG, "Failure to get account", e1);
-      return null;
+      if (e1 instanceof AuthenticatorException && "bind failure".equals(e1.getMessage())) {
+        accounts = new Account[0]; // no accounts present at all, so just register a new one.
+      } else {
+        Log.e(TAG, "Failure to get account", e1);
+        return null;
+      }
     }
     if (accounts.length==0) {
       final Bundle options;
