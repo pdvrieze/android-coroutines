@@ -24,7 +24,9 @@ import android.os.Bundle;
 import android.util.Log;
 
 
-
+/**
+ * @todo Make this independent of the apache client libraries and use http urlconnection instead.
+ */
 public class AuthenticatedWebClient {
 
   private static final String TAG = AuthenticatedWebClient.class.getName();
