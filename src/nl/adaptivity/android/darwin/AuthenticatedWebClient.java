@@ -2,6 +2,7 @@ package nl.adaptivity.android.darwin;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.Date;
 
 import org.apache.http.HttpResponse;
@@ -147,7 +148,10 @@ public class AuthenticatedWebClient {
 
     if (mHttpClient==null) { mHttpClient = new DefaultHttpClient(); }
 
-    mHttpClient.getCookieStore().addCookie(new DarwinCookie(mAuthbase, mToken, pRequest.getURI().getPort()));
+    URI cookieUri = pRequest.getURI();
+    cookieUri = cookieUri.resolve("/");
+
+    mHttpClient.getCookieStore().addCookie(new DarwinCookie(cookieUri.toString(), mToken, pRequest.getURI().getPort()));
 
     final HttpResponse result = mHttpClient.execute(pRequest);
     if (result.getStatusLine().getStatusCode()==HttpURLConnection.HTTP_UNAUTHORIZED) {
