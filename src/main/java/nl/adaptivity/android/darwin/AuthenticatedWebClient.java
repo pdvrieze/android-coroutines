@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -20,6 +19,8 @@ import java.util.Date;
 
 
 /**
+ * A class making it easier to make authenticated requests to darwin.
+ *
  * @todo Make this independent of the apache client libraries and use http urlconnection instead.
  */
 public class AuthenticatedWebClient {
@@ -39,10 +40,10 @@ public class AuthenticatedWebClient {
 
     private static final int[] PORTS = new int[] {443};
     private final String mAuthToken;
-    private String mAuthbase;
-    private int mPort;
+    private final String mAuthbase;
+    private final int mPort;
 
-    public DarwinCookie(String authbase, String authtoken, int port) {
+    public DarwinCookie(final String authbase, final String authtoken, final int port) {
       mAuthbase = authbase;
       mAuthToken = authtoken;
       mPort = port;
@@ -94,7 +95,7 @@ public class AuthenticatedWebClient {
     }
 
     @Override
-    public boolean isExpired(Date date) {
+    public boolean isExpired(final Date date) {
       return false;
     }
 
@@ -110,7 +111,7 @@ public class AuthenticatedWebClient {
 
   }
 
-  private Context mContext;
+  private final Context mContext;
   private boolean mAskedForNewAccount = false;
 
   private String mToken = null;
@@ -119,23 +120,23 @@ public class AuthenticatedWebClient {
 
   private final String mAuthbase;
 
-  private Account mAccount;
+  private final Account mAccount;
 
-  public AuthenticatedWebClient(Context context, String authbase) {
+  public AuthenticatedWebClient(final Context context, final String authbase) {
     this(context, null, authbase);
   }
 
-  public AuthenticatedWebClient(Context context, Account account, String authbase) {
+  public AuthenticatedWebClient(final Context context, final Account account, final String authbase) {
     mContext = context;
     mAccount = account;
     mAuthbase = authbase;
   }
 
-  public HttpResponse execute(HttpUriRequest request) throws ClientProtocolException, IOException {
+  public HttpResponse execute(final HttpUriRequest request) throws IOException {
     return execute(request, false);
   }
 
-  private HttpResponse execute(HttpUriRequest request, boolean retry) throws ClientProtocolException, IOException {
+  private HttpResponse execute(final HttpUriRequest request, final boolean retry) throws IOException {
     final AccountManager accountManager =AccountManager.get(mContext);
     mToken = getAuthToken(accountManager, mAuthbase);
     if (mToken==null) { return null; }
@@ -159,43 +160,39 @@ public class AuthenticatedWebClient {
   }
 
   @SuppressWarnings("deprecation")
-  private String getAuthToken(AccountManager accountManager, String authbase) {
+  private String getAuthToken(final AccountManager accountManager, final String authbase) {
     if (mToken != null) return mToken;
 
-    Account account = mAccount !=null ? mAccount : ensureAccount(mContext, authbase);
+    final Account account = mAccount !=null ? mAccount : ensureAccount(mContext, authbase);
     if (account==null) { mAskedForNewAccount = true; }
 
 
 
-    AccountManagerCallback<Bundle> callback = new AccountManagerCallback<Bundle>() {
+    final AccountManagerCallback<Bundle> callback = new AccountManagerCallback<Bundle>() {
 
       @Override
-      public void run(AccountManagerFuture<Bundle> future) {
+      public void run(final AccountManagerFuture<Bundle> future) {
         try {
-          Bundle b = future.getResult();
-          if (b.containsKey(AccountManager.KEY_INTENT)) {
-            Intent i = (Intent) b.get(AccountManager.KEY_INTENT);
-            mContext.startActivity(i);
+          final Bundle bundle = future.getResult();
+          if (bundle.containsKey(AccountManager.KEY_INTENT)) {
+            final Intent intent = (Intent) bundle.get(AccountManager.KEY_INTENT);
+            mContext.startActivity(intent);
           }
-        } catch (OperationCanceledException e) {
-          e.printStackTrace();
-        } catch (AuthenticatorException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
+        } catch (OperationCanceledException | AuthenticatorException | IOException e) {
+          Log.d(TAG, "Failed to get account", e);
         }
       }
     };
-    AccountManagerFuture<Bundle> result;
+    final AccountManagerFuture<Bundle> result;
     if (mContext instanceof Activity) {
       result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, null, (Activity) mContext, callback , null);
     } else {
       result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, callback, null);
     }
-    Bundle b;
+    final Bundle bundle;
     try {
 //      return accountManager.blockingGetAuthToken(account, ACCOUNT_TOKEN_TYPE, false);
-      b = result.getResult();
+      bundle = result.getResult();
     } catch (OperationCanceledException e) {
       Log.e(TAG, "Error logging in: ", e);
       return null;
@@ -206,21 +203,21 @@ public class AuthenticatedWebClient {
       Log.e(TAG, "Error logging in: ", e);
       return null;
     }
-    return b.getString(AccountManager.KEY_AUTHTOKEN);
+    return bundle.getString(AccountManager.KEY_AUTHTOKEN);
 
   }
 
-  void writeToBundle(Bundle dest) {
+  void writeToBundle(final Bundle dest) {
     dest.putBoolean(KEY_ASKED_FOR_NEW, mAskedForNewAccount);
   }
 
-  void updateFromBundle(Bundle source) {
+  void updateFromBundle(final Bundle source) {
     if (source==null) return;
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account ensureAccount(Context context, String source) {
-    AccountManager accountManager = AccountManager.get(context);
+  public static Account ensureAccount(final Context context, final String source) {
+    final AccountManager accountManager = AccountManager.get(context);
     Account[] accounts;
     try {
       accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {source}, null, null).getResult();
@@ -238,11 +235,11 @@ public class AuthenticatedWebClient {
         options = null;
       } else {
         options = new Bundle(1);
-        Uri uri = Uri.parse(source);
-        String authbase = getAuthBase(uri);
+        final Uri uri = Uri.parse(source);
+        final String authbase = getAuthBase(uri);
         options.putString(KEY_AUTH_BASE, authbase);
       }
-      Bundle result;
+      final Bundle result;
       try {
         result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context instanceof Activity ? ((Activity) context) : null, null, null).getResult();
       } catch (OperationCanceledException | AuthenticatorException | IOException e) {
@@ -252,15 +249,16 @@ public class AuthenticatedWebClient {
         return null;
 //        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
       } else if (result.containsKey(AccountManager.KEY_ACCOUNT_NAME)) {
-        String[] features = new String[] { source} ;
-        String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
-        Account[] candidates;
+        final String[] features = new String[] { source} ;
+        final String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
+        assert name != null : "Name should not be null if it is contained in the intent";
+        final Account[] candidates;
         try {
           candidates = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, features, null, null).getResult();
         } catch (OperationCanceledException | AuthenticatorException | IOException e) {
           return null;
         }
-        for(Account candidate:candidates) {
+        for(final Account candidate:candidates) {
           if (name.equals(candidate.name)) {
             return candidate;
           }
@@ -269,15 +267,23 @@ public class AuthenticatedWebClient {
       }
       return null;
     }
-    Account account = accounts[0];
-    return account;
+    return accounts[0];
   }
 
-  public static String getAuthBase(String uri) {
+  /**
+   * Convenience method around {@link #getAuthBase(Uri)}
+   * @see #getAuthBase(Uri)
+   */
+  public static String getAuthBase(final String uri) {
     return getAuthBase(uri==null? null: Uri.parse(uri));
   }
 
-  public static String getAuthBase(Uri uri) {
+  /**
+   * Get the authentication base to use. use the original scheme and host, and then use the default port and "/accounts/" as the base.
+   * @param uri The base url to use
+   * @return The resulting url to use.
+   */
+  public static String getAuthBase(final Uri uri) {
     if (uri==null) { return null; }
     return uri.getScheme()+"://"+uri.getHost()+"/accounts/";
   }
