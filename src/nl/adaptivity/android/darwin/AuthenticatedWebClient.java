@@ -1,28 +1,22 @@
 package nl.adaptivity.android.darwin;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.Date;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.DefaultHttpClient;
-
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
-import android.accounts.AuthenticatorException;
-import android.accounts.OperationCanceledException;
+import android.accounts.*;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.Date;
 
 
 /**
@@ -48,10 +42,10 @@ public class AuthenticatedWebClient {
     private String aAuthbase;
     private int aPort;
 
-    public DarwinCookie(String pAuthbase, String pAuthtoken, int pPort) {
-      aAuthbase = pAuthbase;
-      aAuthToken = pAuthtoken;
-      aPort = pPort;
+    public DarwinCookie(String authbase, String authtoken, int port) {
+      aAuthbase = authbase;
+      aAuthToken = authtoken;
+      aPort = port;
     }
 
     @Override
@@ -100,7 +94,7 @@ public class AuthenticatedWebClient {
     }
 
     @Override
-    public boolean isExpired(Date pDate) {
+    public boolean isExpired(Date date) {
       return false;
     }
 
@@ -137,28 +131,28 @@ public class AuthenticatedWebClient {
     mAuthbase = authbase;
   }
 
-  public HttpResponse execute(HttpUriRequest pRequest) throws ClientProtocolException, IOException {
-    return execute(pRequest, false);
+  public HttpResponse execute(HttpUriRequest request) throws ClientProtocolException, IOException {
+    return execute(request, false);
   }
 
-  private HttpResponse execute(HttpUriRequest pRequest, boolean retry) throws ClientProtocolException, IOException {
+  private HttpResponse execute(HttpUriRequest request, boolean retry) throws ClientProtocolException, IOException {
     final AccountManager accountManager =AccountManager.get(mContext);
     mToken = getAuthToken(accountManager, mAuthbase);
     if (mToken==null) { return null; }
 
     if (mHttpClient==null) { mHttpClient = new DefaultHttpClient(); }
 
-    URI cookieUri = pRequest.getURI();
+    URI cookieUri = request.getURI();
     cookieUri = cookieUri.resolve("/");
 
-    mHttpClient.getCookieStore().addCookie(new DarwinCookie(cookieUri.toString(), mToken, pRequest.getURI().getPort()));
+    mHttpClient.getCookieStore().addCookie(new DarwinCookie(cookieUri.toString(), mToken, request.getURI().getPort()));
 
-    final HttpResponse result = mHttpClient.execute(pRequest);
+    final HttpResponse result = mHttpClient.execute(request);
     if (result.getStatusLine().getStatusCode()==HttpURLConnection.HTTP_UNAUTHORIZED) {
       result.getEntity().consumeContent(); // make sure to consume the entire error.
       if (! retry) { // Do not repeat retry
         accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
-        return execute(pRequest, true);
+        return execute(request, true);
       }
     }
     return result;
@@ -176,9 +170,9 @@ public class AuthenticatedWebClient {
     AccountManagerCallback<Bundle> callback = new AccountManagerCallback<Bundle>() {
 
       @Override
-      public void run(AccountManagerFuture<Bundle> pFuture) {
+      public void run(AccountManagerFuture<Bundle> future) {
         try {
-          Bundle b = pFuture.getResult();
+          Bundle b = future.getResult();
           if (b.containsKey(AccountManager.KEY_INTENT)) {
             Intent i = (Intent) b.get(AccountManager.KEY_INTENT);
             mContext.startActivity(i);
@@ -216,20 +210,20 @@ public class AuthenticatedWebClient {
 
   }
 
-  void writeToBundle(Bundle pDest) {
-    pDest.putBoolean(KEY_ASKED_FOR_NEW, mAskedForNewAccount);
+  void writeToBundle(Bundle dest) {
+    dest.putBoolean(KEY_ASKED_FOR_NEW, mAskedForNewAccount);
   }
 
-  void updateFromBundle(Bundle pSource) {
-    if (pSource==null) return;
-    mAskedForNewAccount = pSource.getBoolean(KEY_ASKED_FOR_NEW, false);
+  void updateFromBundle(Bundle source) {
+    if (source==null) return;
+    mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account ensureAccount(Context pContext, String pSource) {
-    AccountManager accountManager = AccountManager.get(pContext);
+  public static Account ensureAccount(Context context, String source) {
+    AccountManager accountManager = AccountManager.get(context);
     Account[] accounts;
     try {
-      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {pSource}, null, null).getResult();
+      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {source}, null, null).getResult();
     } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
       if (e1 instanceof AuthenticatorException && "bind failure".equals(e1.getMessage())) {
         accounts = new Account[0]; // no accounts present at all, so just register a new one.
@@ -240,17 +234,17 @@ public class AuthenticatedWebClient {
     }
     if (accounts.length==0) {
       final Bundle options;
-      if (pSource==null) {
+      if (source==null) {
         options = null;
       } else {
         options = new Bundle(1);
-        Uri uri = Uri.parse(pSource);
+        Uri uri = Uri.parse(source);
         String authbase = getAuthBase(uri);
         options.putString(KEY_AUTH_BASE, authbase);
       }
       Bundle result;
       try {
-        result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, pContext instanceof Activity ? ((Activity) pContext) : null, null, null).getResult();
+        result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context instanceof Activity ? ((Activity) context) : null, null, null).getResult();
       } catch (OperationCanceledException | AuthenticatorException | IOException e) {
         return null;
       }
@@ -258,7 +252,7 @@ public class AuthenticatedWebClient {
         return null;
 //        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
       } else if (result.containsKey(AccountManager.KEY_ACCOUNT_NAME)) {
-        String[] features = new String[] { pSource} ;
+        String[] features = new String[] { source} ;
         String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
         Account[] candidates;
         try {
