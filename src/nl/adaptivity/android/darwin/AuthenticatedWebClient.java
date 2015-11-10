@@ -38,14 +38,14 @@ public class AuthenticatedWebClient {
   private static class DarwinCookie implements Cookie {
 
     private static final int[] PORTS = new int[] {443};
-    private final String aAuthToken;
-    private String aAuthbase;
-    private int aPort;
+    private final String mAuthToken;
+    private String mAuthbase;
+    private int mPort;
 
     public DarwinCookie(String authbase, String authtoken, int port) {
-      aAuthbase = authbase;
-      aAuthToken = authtoken;
-      aPort = port;
+      mAuthbase = authbase;
+      mAuthToken = authtoken;
+      mPort = port;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class AuthenticatedWebClient {
 
     @Override
     public String getDomain() {
-      return Uri.parse(aAuthbase).getHost();
+      return Uri.parse(mAuthbase).getHost();
     }
 
     @Override
@@ -80,12 +80,12 @@ public class AuthenticatedWebClient {
 
     @Override
     public int[] getPorts() {
-      return new int[] { aPort };
+      return new int[] { mPort };
     }
 
     @Override
     public String getValue() {
-      return aAuthToken;
+      return mAuthToken;
     }
 
     @Override
@@ -105,7 +105,7 @@ public class AuthenticatedWebClient {
 
     @Override
     public boolean isSecure() {
-      return "https".equals(Uri.parse(aAuthbase).getScheme());
+      return "https".equals(Uri.parse(mAuthbase).getScheme());
     }
 
   }
