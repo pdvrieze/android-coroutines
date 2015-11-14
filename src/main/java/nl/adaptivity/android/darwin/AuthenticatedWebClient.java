@@ -6,15 +6,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.CallSuper;
 import android.util.Log;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
+import javax.net.ssl.HttpsURLConnection;
+
+import java.io.*;
+import java.net.*;
+import java.nio.charset.Charset;
 import java.util.Date;
 
 
@@ -24,6 +24,92 @@ import java.util.Date;
  * @todo Make this independent of the apache client libraries and use http urlconnection instead.
  */
 public class AuthenticatedWebClient {
+
+  public static class WebRequest {
+    private final URI mUri;
+
+    public WebRequest(final URI uri) {
+      String uriScheme = uri.getScheme();
+      if (! ("http".equals(uriScheme)|| "https".equals(uriScheme))) {
+        throw new IllegalArgumentException("Webrequests only work with http and https schemes");
+      }
+      mUri = uri;
+    }
+
+    public URI getUri() {
+      return mUri;
+    }
+
+    @CallSuper
+    public HttpURLConnection getConnection() throws IOException {
+      return (HttpURLConnection) mUri.toURL().openConnection();
+    }
+  }
+
+  public static class GetRequest extends WebRequest {
+
+    public GetRequest(final URI uri) {
+      super(uri);
+    }
+  }
+
+  public static class DeleteRequest extends WebRequest {
+
+    public DeleteRequest(final URI uri) {
+      super(uri);
+    }
+
+    @Override
+    public HttpURLConnection getConnection() throws IOException {
+      HttpURLConnection connection = super.getConnection();
+      connection.setRequestMethod("DELETE");
+      return connection;
+    }
+  }
+
+  private static class CharSequenceCallback implements StreamWriterCallback {
+
+    private final CharSequence mBody;
+
+    public CharSequenceCallback(final CharSequence body) {
+      mBody = body;
+    }
+
+    @Override
+    public void writeTo(final OutputStream stream) throws IOException {
+      Writer out = new OutputStreamWriter(stream, Charset.forName("UTF-8"));
+      for(int i=0; i<mBody.length(); ++i) {
+        out.append(mBody);
+      }
+    }
+  }
+
+  public static class PostRequest extends WebRequest {
+
+    private final StreamWriterCallback mWritingCallback;
+
+    public PostRequest(final URI uri, StreamWriterCallback writingCallback) {
+      super(uri);
+      mWritingCallback = writingCallback;
+    }
+
+    public PostRequest(final URI uri, final CharSequence body) {
+      this(uri, new CharSequenceCallback(body));
+    }
+
+    @Override
+    public HttpURLConnection getConnection() throws IOException {
+      HttpURLConnection connection = super.getConnection();
+      connection.setDoOutput(true);
+      connection.setChunkedStreamingMode(0);
+      mWritingCallback.writeTo(connection.getOutputStream());
+      return connection;
+    }
+  }
+
+  public interface StreamWriterCallback {
+    void writeTo(OutputStream stream) throws IOException;
+  }
 
   private static final String TAG = AuthenticatedWebClient.class.getName();
 
@@ -116,51 +202,69 @@ public class AuthenticatedWebClient {
 
   private String mToken = null;
 
-  private DefaultHttpClient mHttpClient;
-
-  private final String mAuthbase;
+  private final URI mAuthbase;
 
   private final Account mAccount;
+  private CookieManager mCookieManager;
 
-  public AuthenticatedWebClient(final Context context, final String authbase) {
+  public AuthenticatedWebClient(final Context context, final URI authbase) {
     this(context, null, authbase);
   }
 
-  public AuthenticatedWebClient(final Context context, final Account account, final String authbase) {
+  public AuthenticatedWebClient(final Context context, final Account account, final URI authbase) {
     mContext = context;
     mAccount = account;
     mAuthbase = authbase;
   }
 
-  public HttpResponse execute(final HttpUriRequest request) throws IOException {
+  public HttpURLConnection execute(final WebRequest request) throws IOException {
     return execute(request, false);
   }
 
-  private HttpResponse execute(final HttpUriRequest request, final boolean retry) throws IOException {
+  private HttpURLConnection execute(final WebRequest request, final boolean currentlyInRetry) throws IOException {
     final AccountManager accountManager =AccountManager.get(mContext);
     mToken = getAuthToken(accountManager, mAuthbase);
     if (mToken==null) { return null; }
 
-    if (mHttpClient==null) { mHttpClient = new DefaultHttpClient(); }
+    if (mCookieManager==null) {
+      mCookieManager = new CookieManager();
+      CookieHandler.setDefault(mCookieManager);
+    }
 
-    URI cookieUri = request.getURI();
+    URI cookieUri = request.getUri();
     cookieUri = cookieUri.resolve("/");
 
-    mHttpClient.getCookieStore().addCookie(new DarwinCookie(cookieUri.toString(), mToken, request.getURI().getPort()));
+    HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
 
-    final HttpResponse result = mHttpClient.execute(request);
-    if (result.getStatusLine().getStatusCode()==HttpURLConnection.HTTP_UNAUTHORIZED) {
-      result.getEntity().consumeContent(); // make sure to consume the entire error.
-      if (! retry) { // Do not repeat retry
-        accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
-        return execute(request, true);
+    HttpURLConnection connection = request.getConnection();
+    try {
+      if (connection instanceof HttpsURLConnection) {
+        cookie.setSecure(true);
       }
+      mCookieManager.getCookieStore().add(cookieUri, cookie);
+
+
+      if (connection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+        InputStream errorStream = connection.getErrorStream();
+        try {
+          errorStream.skip(Integer.MAX_VALUE);
+        } finally {
+          errorStream.close();
+        }
+        if (!currentlyInRetry) { // Do not repeat retry
+          accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
+          return execute(request, true);
+        }
+      }
+      return connection;
+    } catch (Throwable e) { // Catch exception as there would be no way for a caller to disconnect
+      connection.disconnect();
+      throw e;
     }
-    return result;
   }
 
   @SuppressWarnings("deprecation")
-  private String getAuthToken(final AccountManager accountManager, final String authbase) {
+  private String getAuthToken(final AccountManager accountManager, final URI authbase) {
     if (mToken != null) return mToken;
 
     final Account account = mAccount !=null ? mAccount : ensureAccount(mContext, authbase);
@@ -216,11 +320,11 @@ public class AuthenticatedWebClient {
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account ensureAccount(final Context context, final String source) {
+  public static Account ensureAccount(final Context context, final URI source) {
     final AccountManager accountManager = AccountManager.get(context);
     Account[] accounts;
     try {
-      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {source}, null, null).getResult();
+      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {source.toString()}, null, null).getResult();
     } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
       if (e1 instanceof AuthenticatorException && "bind failure".equals(e1.getMessage())) {
         accounts = new Account[0]; // no accounts present at all, so just register a new one.
@@ -235,9 +339,8 @@ public class AuthenticatedWebClient {
         options = null;
       } else {
         options = new Bundle(1);
-        final Uri uri = Uri.parse(source);
-        final String authbase = getAuthBase(uri);
-        options.putString(KEY_AUTH_BASE, authbase);
+        final URI authbase = getAuthBase(source);
+        options.putString(KEY_AUTH_BASE, authbase.toString());
       }
       final Bundle result;
       try {
@@ -249,7 +352,7 @@ public class AuthenticatedWebClient {
         return null;
 //        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
       } else if (result.containsKey(AccountManager.KEY_ACCOUNT_NAME)) {
-        final String[] features = new String[] { source} ;
+        final String[] features = new String[] { source.toString()} ;
         final String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
         assert name != null : "Name should not be null if it is contained in the intent";
         final Account[] candidates;
@@ -271,11 +374,11 @@ public class AuthenticatedWebClient {
   }
 
   /**
-   * Convenience method around {@link #getAuthBase(Uri)}
-   * @see #getAuthBase(Uri)
+   * Convenience method around {@link #getAuthBase(URI)}
+   * @see #getAuthBase(URI)
    */
-  public static String getAuthBase(final String uri) {
-    return getAuthBase(uri==null? null: Uri.parse(uri));
+  public static URI getAuthBase(final String uri) {
+    return getAuthBase(uri==null? null: URI.create(uri));
   }
 
   /**
@@ -283,9 +386,9 @@ public class AuthenticatedWebClient {
    * @param uri The base url to use
    * @return The resulting url to use.
    */
-  public static String getAuthBase(final Uri uri) {
+  public static URI getAuthBase(final URI uri) {
     if (uri==null) { return null; }
-    return uri.getScheme()+"://"+uri.getHost()+"/accounts/";
+    return URI.create(uri.getScheme()+"://"+uri.getHost()+"/accounts/");
   }
 
 }
