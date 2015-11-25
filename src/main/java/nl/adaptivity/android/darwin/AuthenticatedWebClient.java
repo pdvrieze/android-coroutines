@@ -1,12 +1,16 @@
 package nl.adaptivity.android.darwin;
 
 import android.accounts.*;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import org.apache.http.cookie.Cookie;
 
@@ -15,6 +19,8 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 
@@ -24,6 +30,8 @@ import java.util.Date;
  * @todo Make this independent of the apache client libraries and use http urlconnection instead.
  */
 public class AuthenticatedWebClient {
+
+  public static final String KEY_ACCOUNT_NAME = "ACCOUNT_NAME";
 
   public static class WebRequest {
     private final URI mUri;
@@ -204,7 +212,7 @@ public class AuthenticatedWebClient {
 
   private final URI mAuthbase;
 
-  private final Account mAccount;
+  private Account mAccount;
   private CookieManager mCookieManager;
 
   public AuthenticatedWebClient(final Context context, final URI authbase) {
@@ -235,6 +243,7 @@ public class AuthenticatedWebClient {
     cookieUri = cookieUri.resolve("/");
 
     HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
+    cookie.setDomain(cookieUri.getHost());
 
     HttpURLConnection connection = request.getConnection();
     try {
@@ -267,8 +276,8 @@ public class AuthenticatedWebClient {
   private String getAuthToken(final AccountManager accountManager, final URI authbase) {
     if (mToken != null) return mToken;
 
-    final Account account = mAccount !=null ? mAccount : ensureAccount(mContext, authbase);
-    if (account==null) { mAskedForNewAccount = true; }
+    Account account = getAccount(authbase);
+    if (account == null) return null;
 
 
 
@@ -288,11 +297,8 @@ public class AuthenticatedWebClient {
       }
     };
     final AccountManagerFuture<Bundle> result;
-    if (mContext instanceof Activity) {
-      result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, null, (Activity) mContext, callback , null);
-    } else {
-      result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, callback, null);
-    }
+    result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, callback, null);
+
     final Bundle bundle;
     try {
 //      return accountManager.blockingGetAuthToken(account, ACCOUNT_TOKEN_TYPE, false);
@@ -311,6 +317,21 @@ public class AuthenticatedWebClient {
 
   }
 
+  @Nullable
+  private Account getAccount(final URI authbase) {
+    if (mAccount!=null) {
+      return mAccount;
+    } else {
+      Account[] accounts = getAccount(mContext, authbase);
+      if (accounts.length > 1) { throw new IllegalStateException("Multiple accounts given"); }
+      Account account = accounts.length == 0 ? null : accounts[0];
+
+      if (account == null) { return null; }
+      mAccount = account;
+      return account;
+    }
+  }
+
   public void writeToBundle(final Bundle dest) {
     dest.putBoolean(KEY_ASKED_FOR_NEW, mAskedForNewAccount);
   }
@@ -320,19 +341,14 @@ public class AuthenticatedWebClient {
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account ensureAccount(final Context context, final URI source) {
-    final AccountManager accountManager = AccountManager.get(context);
-    Account[] accounts;
-    try {
-      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, new String[] {source.toString()}, null, null).getResult();
-    } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
-      if (e1 instanceof AuthenticatorException && "bind failure".equals(e1.getMessage())) {
-        accounts = new Account[0]; // no accounts present at all, so just register a new one.
-      } else {
-        Log.e(TAG, "Failure to get account", e1);
-        return null;
-      }
+  public static Account[] ensureAccount(final Activity context, final URI source, int activityRequestCode) {
+    if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+      return Api14Helper.ensureAccount(context, source, activityRequestCode);
     }
+
+    final AccountManager accountManager = AccountManager.get(context);
+    final Account[] accounts = getAccount(context, source);
+
     if (accounts.length==0) {
       final Bundle options;
       if (source==null) {
@@ -363,14 +379,19 @@ public class AuthenticatedWebClient {
         }
         for(final Account candidate:candidates) {
           if (name.equals(candidate.name)) {
-            return candidate;
+            try {
+              accountManager.blockingGetAuthToken(candidate, ACCOUNT_TOKEN_TYPE, true);
+            } catch (OperationCanceledException | IOException | AuthenticatorException e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
+            return new Account[]{candidate};
           }
         }
-        return null;
       }
-      return null;
+      return new Account[0];
     }
-    return accounts[0];
+    return accounts;
   }
 
   /**
@@ -388,7 +409,58 @@ public class AuthenticatedWebClient {
    */
   public static URI getAuthBase(final URI uri) {
     if (uri==null) { return null; }
-    return URI.create(uri.getScheme()+"://"+uri.getHost()+"/accounts/");
+    return URI.create(uri.getScheme() + "://" + uri.getHost() + "/accounts/");
   }
 
+  public static Account[] getAccount(final Context context, final URI source) {
+    final AccountManager accountManager = AccountManager.get(context);
+    Account[] accounts;
+    try {
+      accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, source==null ? null : new String[] {source.toString()}, null, null).getResult();
+    } catch (OperationCanceledException | AuthenticatorException | IOException e1) {
+      if (e1 instanceof AuthenticatorException && "bind failure".equals(e1.getMessage())) {
+        return new Account[0]; // no accounts present at all, so just register a new one.
+      } else {
+        Log.e(TAG, "Failure to get account", e1);
+        throw new RuntimeException(e1);
+      }
+    }
+    SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
+    final String storedAccountName = preferences.getString(KEY_ACCOUNT_NAME, null);
+    if (storedAccountName!=null) {
+      for(Account candidate: accounts) {
+        if (storedAccountName.equals(candidate.name)) {
+          return new Account[]{candidate};
+        }
+      }
+    }
+    return new Account[0];
+  }
+
+  @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+  private static class Api14Helper {
+
+    public static Account[] ensureAccount(final Activity context, final URI source, final int activityRequestCode) {
+      final Account[] accounts = getAccount(context, source);
+
+      if (accounts.length!=1) {
+        final Bundle options;
+        if (source == null) {
+          options = null;
+        } else {
+          options = new Bundle(1);
+          final URI authbase = getAuthBase(source);
+          options.putString(KEY_AUTH_BASE, authbase.toString());
+        }
+
+        // We didn't find the account we knew about
+        Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{ACCOUNT_TYPE}, false, null, null, null, options);
+        context.startActivityForResult(intent, activityRequestCode);
+
+        return null;
+      }
+      return accounts;
+    }
+
+  }
 }
