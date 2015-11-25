@@ -311,11 +311,11 @@ public class AuthenticatedWebClient {
 
   }
 
-  void writeToBundle(final Bundle dest) {
+  public void writeToBundle(final Bundle dest) {
     dest.putBoolean(KEY_ASKED_FOR_NEW, mAskedForNewAccount);
   }
 
-  void updateFromBundle(final Bundle source) {
+  public void updateFromBundle(final Bundle source) {
     if (source==null) return;
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
