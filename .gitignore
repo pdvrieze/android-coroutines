@@ -2,4 +2,6 @@
 /build
 /gen
 /bin
-
+*.iml
+/.idea/libraries
+/.idea/workspace.xml
