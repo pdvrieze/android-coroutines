@@ -12,15 +12,12 @@ import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import org.apache.http.cookie.Cookie;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 
 
@@ -130,81 +127,6 @@ public class AuthenticatedWebClient {
 
   private static final String DARWIN_AUTH_COOKIE = "DWNID";
 
-  private static class DarwinCookie implements Cookie {
-
-    private static final int[] PORTS = new int[] {443};
-    private final String mAuthToken;
-    private final String mAuthbase;
-    private final int mPort;
-
-    public DarwinCookie(final String authbase, final String authtoken, final int port) {
-      mAuthbase = authbase;
-      mAuthToken = authtoken;
-      mPort = port;
-    }
-
-    @Override
-    public String getComment() {
-      return null;
-    }
-
-    @Override
-    public String getCommentURL() {
-      return null;
-    }
-
-    @Override
-    public String getDomain() {
-      return Uri.parse(mAuthbase).getHost();
-    }
-
-    @Override
-    public Date getExpiryDate() {
-      return null;
-    }
-
-    @Override
-    public String getName() {
-      return DARWIN_AUTH_COOKIE;
-    }
-
-    @Override
-    public String getPath() {
-      return "/";
-    }
-
-    @Override
-    public int[] getPorts() {
-      return new int[] { mPort };
-    }
-
-    @Override
-    public String getValue() {
-      return mAuthToken;
-    }
-
-    @Override
-    public int getVersion() {
-      return 1;
-    }
-
-    @Override
-    public boolean isExpired(final Date date) {
-      return false;
-    }
-
-    @Override
-    public boolean isPersistent() {
-      return false;
-    }
-
-    @Override
-    public boolean isSecure() {
-      return "https".equals(Uri.parse(mAuthbase).getScheme());
-    }
-
-  }
-
   private final Context mContext;
   private boolean mAskedForNewAccount = false;
 
@@ -276,7 +198,7 @@ public class AuthenticatedWebClient {
   private String getAuthToken(final AccountManager accountManager, final URI authbase) {
     if (mToken != null) return mToken;
 
-    Account account = getAccount(authbase);
+    Account account = getAccount(accountManager, authbase);
     if (account == null) return null;
 
 
@@ -318,11 +240,11 @@ public class AuthenticatedWebClient {
   }
 
   @Nullable
-  private Account getAccount(final URI authbase) {
+  private Account getAccount(final AccountManager accountManager, final URI authbase) {
     if (mAccount!=null) {
       return mAccount;
     } else {
-      Account[] accounts = getAccount(mContext, authbase);
+      Account[] accounts = getAccount(accountManager, mContext, authbase);
       if (accounts.length > 1) { throw new IllegalStateException("Multiple accounts given"); }
       Account account = accounts.length == 0 ? null : accounts[0];
 
@@ -347,7 +269,7 @@ public class AuthenticatedWebClient {
     }
 
     final AccountManager accountManager = AccountManager.get(context);
-    final Account[] accounts = getAccount(context, source);
+    final Account[] accounts = getAccount(accountManager, context, source);
 
     if (accounts.length==0) {
       final Bundle options;
@@ -413,7 +335,10 @@ public class AuthenticatedWebClient {
   }
 
   public static Account[] getAccount(final Context context, final URI source) {
-    final AccountManager accountManager = AccountManager.get(context);
+    return getAccount(AccountManager.get(context), context, source);
+  }
+
+  public static Account[] getAccount(final AccountManager accountManager, final Context context, final URI source) {
     Account[] accounts;
     try {
       accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, source==null ? null : new String[] {source.toString()}, null, null).getResult();
@@ -441,7 +366,8 @@ public class AuthenticatedWebClient {
   private static class Api14Helper {
 
     public static Account[] ensureAccount(final Activity context, final URI source, final int activityRequestCode) {
-      final Account[] accounts = getAccount(context, source);
+      final AccountManager accountManager = AccountManager.get(context);
+      final Account[] accounts = getAccount(accountManager, context, source);
 
       if (accounts.length!=1) {
         final Bundle options;
@@ -458,6 +384,8 @@ public class AuthenticatedWebClient {
         context.startActivityForResult(intent, activityRequestCode);
 
         return null;
+      } else {
+        accountManager.peekAuthToken(accounts[0], ACCOUNT_TOKEN_TYPE);
       }
       return accounts;
     }
