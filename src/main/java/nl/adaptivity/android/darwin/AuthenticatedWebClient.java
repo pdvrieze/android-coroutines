@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
@@ -18,7 +17,6 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import java.util.Date;
 
 
 /**
@@ -148,10 +146,15 @@ public class AuthenticatedWebClient {
   }
 
   public HttpURLConnection execute(final WebRequest request) throws IOException {
-    return execute(request, false);
+    return execute(request, false, -1);
   }
 
-  private HttpURLConnection execute(final WebRequest request, final boolean currentlyInRetry) throws IOException {
+  public HttpURLConnection execute(final WebRequest request, final int activityRequestCode) throws IOException {
+    return execute(request, false, activityRequestCode);
+  }
+
+  @Nullable
+  private HttpURLConnection execute(final WebRequest request, final boolean currentlyInRetry, final int activityRequestCode) throws IOException {
     final AccountManager accountManager =AccountManager.get(mContext);
     mToken = getAuthToken(accountManager, mAuthbase);
     if (mToken==null) { return null; }
@@ -184,7 +187,8 @@ public class AuthenticatedWebClient {
         }
         if (!currentlyInRetry) { // Do not repeat retry
           accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
-          return execute(request, true);
+          int activityRequestCode1 = -1;
+          return execute(request, true, activityRequestCode1);
         }
       }
       return connection;
@@ -244,9 +248,7 @@ public class AuthenticatedWebClient {
     if (mAccount!=null) {
       return mAccount;
     } else {
-      Account[] accounts = getAccount(accountManager, mContext, authbase);
-      if (accounts.length > 1) { throw new IllegalStateException("Multiple accounts given"); }
-      Account account = accounts.length == 0 ? null : accounts[0];
+      Account account = getAccount(accountManager, mContext, authbase);
 
       if (account == null) { return null; }
       mAccount = account;
@@ -263,15 +265,15 @@ public class AuthenticatedWebClient {
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account[] ensureAccount(final Activity context, final URI source, int activityRequestCode) {
+  public static Account ensureAccount(final Activity context, final URI source, int activityRequestCode) {
     if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
       return Api14Helper.ensureAccount(context, source, activityRequestCode);
     }
 
     final AccountManager accountManager = AccountManager.get(context);
-    final Account[] accounts = getAccount(accountManager, context, source);
+    final Account account = getAccount(accountManager, context, source);
 
-    if (accounts.length==0) {
+    if (account==null) {
       final Bundle options;
       if (source==null) {
         options = null;
@@ -282,7 +284,7 @@ public class AuthenticatedWebClient {
       }
       final Bundle result;
       try {
-        result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context instanceof Activity ? ((Activity) context) : null, null, null).getResult();
+        result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context, null, null).getResult();
       } catch (OperationCanceledException | AuthenticatorException | IOException e) {
         return null;
       }
@@ -301,19 +303,20 @@ public class AuthenticatedWebClient {
         }
         for(final Account candidate:candidates) {
           if (name.equals(candidate.name)) {
+            storeUsedAccount(context, candidate);
             try {
               accountManager.blockingGetAuthToken(candidate, ACCOUNT_TOKEN_TYPE, true);
             } catch (OperationCanceledException | IOException | AuthenticatorException e) {
               e.printStackTrace();
               throw new RuntimeException(e);
             }
-            return new Account[]{candidate};
+            return candidate;
           }
         }
       }
-      return new Account[0];
+      return null;
     }
-    return accounts;
+    return account;
   }
 
   /**
@@ -321,7 +324,7 @@ public class AuthenticatedWebClient {
    * @see #getAuthBase(URI)
    */
   public static URI getAuthBase(final String uri) {
-    return getAuthBase(uri==null? null: URI.create(uri));
+    return getAuthBase(uri == null ? null : URI.create(uri));
   }
 
   /**
@@ -335,10 +338,27 @@ public class AuthenticatedWebClient {
   }
 
   public static Account[] getAccount(final Context context, final URI source) {
-    return getAccount(AccountManager.get(context), context, source);
+    return getAccounts(AccountManager.get(context), context, source);
   }
 
-  public static Account[] getAccount(final AccountManager accountManager, final Context context, final URI source) {
+  public static Account getAccount(final AccountManager accountManager, final Context context, final URI source) {
+    Account [] accounts = getAccounts(accountManager, context, source);
+    final String storedAccountName = getStoredAccountName(context);
+    if (storedAccountName!=null) {
+      for(Account candidate: accounts) {
+        if (storedAccountName.equals(candidate.name)) {
+          return candidate;
+        }
+      }
+    }
+    return null;
+  }
+
+  private static String getStoredAccountName(final Context context) {SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
+    return preferences.getString(KEY_ACCOUNT_NAME, null);
+  }
+
+  public static Account[] getAccounts(final AccountManager accountManager, final Context context, final URI source) {
     Account[] accounts;
     try {
       accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, source==null ? null : new String[] {source.toString()}, null, null).getResult();
@@ -350,8 +370,7 @@ public class AuthenticatedWebClient {
         throw new RuntimeException(e1);
       }
     }
-    SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
-    final String storedAccountName = preferences.getString(KEY_ACCOUNT_NAME, null);
+    final String storedAccountName = getStoredAccountName(context);
     if (storedAccountName!=null) {
       for(Account candidate: accounts) {
         if (storedAccountName.equals(candidate.name)) {
@@ -362,32 +381,50 @@ public class AuthenticatedWebClient {
     return new Account[0];
   }
 
+  public static void storeUsedAccount(Context context, Account account) {
+    SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
+    final SharedPreferences.Editor editor = preferences.edit();
+    editor.putString(KEY_ACCOUNT_NAME, account.name);
+    editor.apply();
+  }
+
   @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
   private static class Api14Helper {
 
-    public static Account[] ensureAccount(final Activity context, final URI source, final int activityRequestCode) {
+    public static Account ensureAccount(final Activity context, final URI source, final int activityRequestCode) {
       final AccountManager accountManager = AccountManager.get(context);
-      final Account[] accounts = getAccount(accountManager, context, source);
+      final Account[] accounts = getAccounts(accountManager, context, source);
+      String accountName = getStoredAccountName(context);
+      if (accountName!=null && accounts.length>0) {
+        for (Account account: accounts) { if (accountName.equals(account.name)) { return account; }}
+      }
 
-      if (accounts.length!=1) {
-        final Bundle options;
-        if (source == null) {
-          options = null;
-        } else {
-          options = new Bundle(1);
-          final URI authbase = getAuthBase(source);
-          options.putString(KEY_AUTH_BASE, authbase.toString());
-        }
-
+      final Bundle options;
+      if (source == null) {
+        options = null;
+      } else {
+        options = new Bundle(1);
+        final URI authbase = getAuthBase(source);
+        options.putString(KEY_AUTH_BASE, authbase.toString());
+      }
+      if (accounts.length>=1) {
         // We didn't find the account we knew about
         Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{ACCOUNT_TYPE}, false, null, null, null, options);
         context.startActivityForResult(intent, activityRequestCode);
-
-        return null;
       } else {
-        accountManager.peekAuthToken(accounts[0], ACCOUNT_TOKEN_TYPE);
+        final Bundle result;
+        try {
+          result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context, null, null).getResult();
+        } catch (OperationCanceledException | AuthenticatorException | IOException e) {
+          return null;
+        }
+        if (result.containsKey(AccountManager.KEY_INTENT)) {
+          return null;
+//        pContext.startActivity(result.<Intent>getParcelable(AccountManager.KEY_INTENT));
+        }
       }
-      return accounts;
+
+      return null;
     }
 
   }
