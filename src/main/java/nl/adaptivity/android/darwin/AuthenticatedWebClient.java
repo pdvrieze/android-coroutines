@@ -303,7 +303,7 @@ public class AuthenticatedWebClient {
         }
         for(final Account candidate:candidates) {
           if (name.equals(candidate.name)) {
-            storeUsedAccount(context, candidate);
+            storeUsedAccount(context, candidate.name);
             try {
               accountManager.blockingGetAuthToken(candidate, ACCOUNT_TOKEN_TYPE, true);
             } catch (OperationCanceledException | IOException | AuthenticatorException e) {
@@ -370,21 +370,13 @@ public class AuthenticatedWebClient {
         throw new RuntimeException(e1);
       }
     }
-    final String storedAccountName = getStoredAccountName(context);
-    if (storedAccountName!=null) {
-      for(Account candidate: accounts) {
-        if (storedAccountName.equals(candidate.name)) {
-          return new Account[]{candidate};
-        }
-      }
-    }
-    return new Account[0];
+    return accounts;
   }
 
-  public static void storeUsedAccount(Context context, Account account) {
+  public static void storeUsedAccount(Context context, String accountname) {
     SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
     final SharedPreferences.Editor editor = preferences.edit();
-    editor.putString(KEY_ACCOUNT_NAME, account.name);
+    editor.putString(KEY_ACCOUNT_NAME, accountname);
     editor.apply();
   }
 
