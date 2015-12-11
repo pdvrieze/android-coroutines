@@ -3,6 +3,7 @@ package nl.adaptivity.android.darwin;
 import android.accounts.*;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -124,6 +125,7 @@ public class AuthenticatedWebClient {
   public static final String KEY_AUTH_BASE = "authbase";
 
   private static final String DARWIN_AUTH_COOKIE = "DWNID";
+  public static final String DOWNLOAD_DIALOG_TAG = "DOWNLOAD_DIALOG";
 
   private final Context mContext;
   private boolean mAskedForNewAccount = false;
@@ -265,9 +267,17 @@ public class AuthenticatedWebClient {
     mAskedForNewAccount = source.getBoolean(KEY_ASKED_FOR_NEW, false);
   }
 
-  public static Account ensureAccount(final Activity context, final URI source, int activityRequestCode) {
+  public static Account ensureAccount(final Activity context, final URI source) {
+    return ensureAccount(context, source, -1, -1);
+  }
+
+  public static Account ensureAccount(final Activity context, final URI source, int chooseRequestCode) {
+    return ensureAccount(context, source, chooseRequestCode, -1);
+  }
+
+  public static Account ensureAccount(final Activity context, final URI source, int chooseRequestCode, int downloadRequestCode) {
     if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-      return Api14Helper.ensureAccount(context, source, activityRequestCode);
+      return Api14Helper.ensureAccount(context, source, chooseRequestCode, downloadRequestCode);
     }
 
     final AccountManager accountManager = AccountManager.get(context);
@@ -354,7 +364,8 @@ public class AuthenticatedWebClient {
     return null;
   }
 
-  private static String getStoredAccountName(final Context context) {SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
+  private static String getStoredAccountName(final Context context) {SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class
+                                                                                                                                          .getName(), Context.MODE_PRIVATE);
     return preferences.getString(KEY_ACCOUNT_NAME, null);
   }
 
@@ -380,13 +391,33 @@ public class AuthenticatedWebClient {
     editor.apply();
   }
 
+  private static boolean hasAuthenticator(AccountManager accountManager) {
+    for(AuthenticatorDescription authenticator: accountManager.getAuthenticatorTypes()) {
+      if (ACCOUNT_TYPE.equals(authenticator.type)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static void startDownloadDialog(Activity activity, final int downloadRequestCode) {
+    DownloadDialog downloadDialog = new DownloadDialog();
+    downloadDialog.show(activity.getFragmentManager(), DOWNLOAD_DIALOG_TAG);
+  }
+
   @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
   private static class Api14Helper {
 
-    public static Account ensureAccount(final Activity context, final URI source, final int activityRequestCode) {
-      final AccountManager accountManager = AccountManager.get(context);
-      final Account[] accounts = getAccounts(accountManager, context, source);
-      String accountName = getStoredAccountName(context);
+    public static Account ensureAccount(final Activity activity, final URI source, final int chooseRequestCode, final int downloadRequestCode) {
+      final AccountManager accountManager = AccountManager.get(activity);
+      if (!hasAuthenticator(accountManager)) {
+        if (downloadRequestCode>=0) {
+          startDownloadDialog(activity, downloadRequestCode);
+        }
+        return null;
+      }
+      final Account[] accounts = getAccounts(accountManager, activity, source);
+      String accountName = getStoredAccountName(activity);
       if (accountName!=null && accounts.length>0) {
         for (Account account: accounts) { if (accountName.equals(account.name)) { return account; }}
       }
@@ -399,14 +430,15 @@ public class AuthenticatedWebClient {
         final URI authbase = getAuthBase(source);
         options.putString(KEY_AUTH_BASE, authbase.toString());
       }
-      if (accounts.length>=1) {
+      if (chooseRequestCode>=0) {
         // We didn't find the account we knew about
+        @SuppressWarnings("deprecation")
         Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{ACCOUNT_TYPE}, false, null, null, null, options);
-        context.startActivityForResult(intent, activityRequestCode);
+        activity.startActivityForResult(intent, chooseRequestCode);
       } else {
         final Bundle result;
         try {
-          result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, context, null, null).getResult();
+          result = accountManager.addAccount(ACCOUNT_TYPE, ACCOUNT_TOKEN_TYPE, null, options, activity, null, null).getResult();
         } catch (OperationCanceledException | AuthenticatorException | IOException e) {
           return null;
         }

@@ -1,3 +1,6 @@
 <resources>
 
+    <string name="dlg_msg_confirm_authenticator_download">You do not have the darwin authenticator installed. Do you want it to be downloaded and installed for you?</string>
+    <string name="btn_confirm_download">Download</string>
+    <string name="download_title">Darwin Authenticator apk</string>
 </resources>
