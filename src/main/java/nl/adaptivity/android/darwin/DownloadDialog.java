@@ -23,8 +23,10 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
 
   public static final String AUTHENTICATOR_URL = "https://darwin.bournemouth.ac.uk/darwin-auth.apk";
   private static final int INSTALL_ACTIVITY_REQUEST = 1234;
+  public static final java.lang.String KEY_REQUEST_CODE = "requestcode";
   private long mDownloadReference = -1L;
-  private Uri mDownloaded;
+  private File mDownloaded;
+  private int mRequestCode = INSTALL_ACTIVITY_REQUEST;
 
   private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
     @Override
@@ -32,8 +34,8 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
       if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
         long downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
         if (downloadId==mDownloadReference) {
-          getActivity().unregisterReceiver(mBroadcastReceiver);
-          DownloadManager downloadManager = (DownloadManager) getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
+          context.unregisterReceiver(mBroadcastReceiver);
+          DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
           final Query query = new Query();
           query.setFilterById(mDownloadReference);
           Cursor data = downloadManager.query(query);
@@ -41,8 +43,8 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
             if (data.moveToNext()) {
               int status = data.getInt(data.getColumnIndex(DownloadManager.COLUMN_STATUS));
               if (status==DownloadManager.STATUS_SUCCESSFUL) {
-                mDownloaded = Uri.parse(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
-                doInstall(mDownloaded);
+                mDownloaded = new File(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)));
+                doInstall(context, mDownloaded);
               }
             }
           } finally {
@@ -53,8 +55,31 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
     }
   };
 
+  public static DownloadDialog newInstance(int requestCode) {
+    DownloadDialog result = new DownloadDialog();
+    Bundle b = new Bundle(1);
+    b.putInt(KEY_REQUEST_CODE, requestCode);
+    result.setArguments(b);
+    return result;
+  }
+
+  @Override
+  public void onCreate(final Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    if (savedInstanceState!=null && savedInstanceState.containsKey(KEY_REQUEST_CODE)) {
+      mRequestCode = savedInstanceState.getInt(KEY_REQUEST_CODE);
+    } else {
+      final Bundle args = getArguments();
+      mRequestCode = args.getInt(KEY_REQUEST_CODE, INSTALL_ACTIVITY_REQUEST);
+    }
+  }
+
   @Override
   public Dialog onCreateDialog(final Bundle savedInstanceState) {
+    final Bundle args = getArguments();
+    mRequestCode = args.getInt(KEY_REQUEST_CODE, INSTALL_ACTIVITY_REQUEST);
+
+
     Builder builder = new Builder(getActivity());
     AlertDialog dialog = builder
             .setMessage(R.string.dlg_msg_confirm_authenticator_download)
@@ -63,7 +88,7 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
             .create();
 
 
-    return super.onCreateDialog(savedInstanceState);
+    return dialog;
   }
 
   @Override
@@ -101,21 +126,15 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
     getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
   }
 
-  private void doInstall(final Uri uri) {
-    File file = new File(URI.create(mDownloaded.toString()));
+  private void doInstall(final Context context, final File file) {
     file.setReadable(true, false);
     Intent installIntent = new Intent(Intent.ACTION_VIEW)
-            .setDataAndType(uri, "application/vnd.android.package-archive");
-    startActivityForResult(installIntent, INSTALL_ACTIVITY_REQUEST);
-  }
-
-  @Override
-  public void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-    if (requestCode==INSTALL_ACTIVITY_REQUEST) {
-      File file = new File(URI.create(mDownloaded.toString()));
-      file.delete();
-      dismiss();
+            .setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+    if (context instanceof Activity) {
+      ((Activity) context).startActivityForResult(installIntent, mRequestCode);
+    } else {
+      context.startActivity(installIntent);
     }
+    dismiss();
   }
 }

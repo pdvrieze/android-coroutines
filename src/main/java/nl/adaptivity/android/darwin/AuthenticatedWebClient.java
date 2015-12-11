@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.Toast;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -401,7 +402,8 @@ public class AuthenticatedWebClient {
   }
 
   private static void startDownloadDialog(Activity activity, final int downloadRequestCode) {
-    DownloadDialog downloadDialog = new DownloadDialog();
+    DownloadDialog downloadDialog = DownloadDialog.newInstance(downloadRequestCode);
+
     downloadDialog.show(activity.getFragmentManager(), DOWNLOAD_DIALOG_TAG);
   }
 
@@ -413,6 +415,8 @@ public class AuthenticatedWebClient {
       if (!hasAuthenticator(accountManager)) {
         if (downloadRequestCode>=0) {
           startDownloadDialog(activity, downloadRequestCode);
+        } else {
+          Toast.makeText(activity, "The authenticator is not installed", Toast.LENGTH_LONG).show();
         }
         return null;
       }
