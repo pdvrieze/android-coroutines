@@ -3,7 +3,6 @@ package nl.adaptivity.android.darwin;
 import android.accounts.*;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,6 +31,8 @@ public class AuthenticatedWebClient {
 
   public static class WebRequest {
     private final URI mUri;
+    private String[] mHeaders;
+    private int mHeaderCount;
 
     public WebRequest(final URI uri) {
       String uriScheme = uri.getScheme();
@@ -41,13 +42,43 @@ public class AuthenticatedWebClient {
       mUri = uri;
     }
 
+    public void setHeader(final String name, final String value) {
+      if (mHeaders==null) {
+        mHeaders = new String[10];
+      } else if (mHeaders.length==mHeaderCount*2) {
+        String[] tmp = new String[mHeaders.length * 2];
+        System.arraycopy(mHeaders, 0, tmp, 0, mHeaders.length);
+        mHeaders = tmp;
+      }
+      int pos = mHeaderCount*2;
+      mHeaders[pos] = name;
+      mHeaders[pos+1] = value;
+      mHeaderCount++;
+    }
+
+    public String getHeaderName(int index) {
+      return mHeaders[index*2];
+    }
+
+    public String getHeaderValue(int index) {
+      return mHeaders[index*2 + 1];
+    }
+
+    public int getHeaderCount() {
+      return mHeaderCount;
+    }
+
     public URI getUri() {
       return mUri;
     }
 
     @CallSuper
     public HttpURLConnection getConnection() throws IOException {
-      return (HttpURLConnection) mUri.toURL().openConnection();
+      HttpURLConnection connection = (HttpURLConnection) mUri.toURL().openConnection();
+      for (int i = 0; i < mHeaderCount; i++) {
+        connection.addRequestProperty(mHeaders[i * 2], mHeaders[i * 2 + 1]);
+      }
+      return connection;
     }
   }
 
@@ -83,8 +114,10 @@ public class AuthenticatedWebClient {
     @Override
     public void writeTo(final OutputStream stream) throws IOException {
       Writer out = new OutputStreamWriter(stream, Charset.forName("UTF-8"));
-      for(int i=0; i<mBody.length(); ++i) {
+      try {
         out.append(mBody);
+      } finally {
+        out.flush(); // Just flush, don't close.
       }
     }
   }
@@ -107,9 +140,19 @@ public class AuthenticatedWebClient {
       HttpURLConnection connection = super.getConnection();
       connection.setDoOutput(true);
       connection.setChunkedStreamingMode(0);
-      mWritingCallback.writeTo(connection.getOutputStream());
+      OutputStream outputStream = connection.getOutputStream();
+      try {
+        mWritingCallback.writeTo(outputStream);
+      } finally {
+        outputStream.close();
+      }
       return connection;
     }
+
+    public void setContentType(final String contentType) {
+      setHeader("Content-type", contentType);
+    }
+
   }
 
   public interface StreamWriterCallback {
@@ -230,7 +273,6 @@ public class AuthenticatedWebClient {
 
     final Bundle bundle;
     try {
-//      return accountManager.blockingGetAuthToken(account, ACCOUNT_TOKEN_TYPE, false);
       bundle = result.getResult();
     } catch (OperationCanceledException e) {
       Log.e(TAG, "Error logging in: ", e);
