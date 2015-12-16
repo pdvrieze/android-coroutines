@@ -4,13 +4,19 @@ version = '1.0.0'
 description = 'Android support library for darwin functionality'
 //group = 'android'
 
+ext {
+    if (! has('androidCompatVersion') ) { androidCompatVersion = '23.1.1' }
+    if (! has('androidPluginVersion') ) { androidPluginVersion = '1.5.0' }
+    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '23.0.2' }
+}
+
 buildscript {
 	repositories {
 		jcenter()
 	}
 	dependencies {
-//		classpath 'com.android.tools.build:gradle:1.5.0'
-        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
+		classpath 'com.android.tools.build:gradle:1.5.0'
+//        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
 	}
 }
 
@@ -21,7 +27,7 @@ task wrapper(type: Wrapper) {
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion "${androidBuildToolsVersion}"
 
     defaultConfig {
         minSdkVersion 11
@@ -37,5 +43,5 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-annotations:23.1.1'
+    compile "com.android.support:support-annotations:${androidCompatVersion}"
 }
