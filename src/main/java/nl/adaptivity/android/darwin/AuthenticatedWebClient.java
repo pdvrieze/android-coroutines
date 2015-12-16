@@ -128,6 +128,7 @@ public class AuthenticatedWebClient {
 
     public PostRequest(final URI uri, StreamWriterCallback writingCallback) {
       super(uri);
+      setContentType("application/binary"); // This is a much better default than form/urlencoded
       mWritingCallback = writingCallback;
     }
 
