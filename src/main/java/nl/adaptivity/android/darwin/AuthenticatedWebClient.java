@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -171,6 +172,7 @@ public class AuthenticatedWebClient {
 
   private static final String DARWIN_AUTH_COOKIE = "DWNID";
   public static final String DOWNLOAD_DIALOG_TAG = "DOWNLOAD_DIALOG";
+  private static String _sharedPreferenceName = AuthenticatedWebClient.class.getName();
 
   private final Context mContext;
   private boolean mAskedForNewAccount = false;
@@ -404,13 +406,31 @@ public class AuthenticatedWebClient {
           return candidate;
         }
       }
+      // The stored account name is no longer valid
+      storeUsedAccount(context, null);
     }
     return null;
   }
 
-  private static String getStoredAccountName(final Context context) {SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class
-                                                                                                                                          .getName(), Context.MODE_PRIVATE);
+  private static String getStoredAccountName(final Context context) {
+    SharedPreferences preferences = getSharedPreferences(context);
     return preferences.getString(KEY_ACCOUNT_NAME, null);
+  }
+
+  public static String getSharedPreferenceName() {
+    return _sharedPreferenceName;
+  }
+
+  public static void setSharedPreferenceName(String name) {
+    _sharedPreferenceName=name;
+  }
+
+  private static SharedPreferences getSharedPreferences(final Context context) {
+    if (_sharedPreferenceName==null) {
+      return PreferenceManager.getDefaultSharedPreferences(context);
+    } else {
+      return context.getSharedPreferences(_sharedPreferenceName, Context.MODE_PRIVATE);
+    }
   }
 
   public static Account[] getAccounts(final AccountManager accountManager, final Context context, final URI source) {
@@ -429,9 +449,13 @@ public class AuthenticatedWebClient {
   }
 
   public static void storeUsedAccount(Context context, String accountname) {
-    SharedPreferences preferences = context.getSharedPreferences(AuthenticatedWebClient.class.getName(), Context.MODE_PRIVATE);
+    SharedPreferences preferences = getSharedPreferences(context);
     final SharedPreferences.Editor editor = preferences.edit();
-    editor.putString(KEY_ACCOUNT_NAME, accountname);
+    if (accountname==null || accountname.isEmpty()) {
+      editor.remove(KEY_ACCOUNT_NAME);
+    } else {
+      editor.putString(KEY_ACCOUNT_NAME, accountname);
+    }
     editor.apply();
   }
 
