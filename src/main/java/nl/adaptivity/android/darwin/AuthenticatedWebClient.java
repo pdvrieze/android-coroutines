@@ -11,6 +11,8 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
+import android.support.annotation.WorkerThread;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -393,14 +395,31 @@ public class AuthenticatedWebClient {
     return URI.create(uri.getScheme() + "://" + uri.getHost() + "/accounts/");
   }
 
-  public static Account[] getAccount(final Context context, final URI source) {
-    return getAccounts(AccountManager.get(context), context, source);
+  /**
+   * Get candidate accounts known to the account manager.
+   * @param context The context to use.
+   * @param source The authentication url to use.
+   * @return A list of current candidate acccounts.
+   * @see {@link #getCandidateAccounts(AccountManager, Context, URI)}
+   */
+  @WorkerThread
+  public static Account[] getCandidateAccounts(final Context context, final URI source) {
+    return getCandidateAccounts(AccountManager.get(context), context, source);
   }
 
+  /**
+   * Get (and verify) the stored account. If the stored account no longer exists, it will be removed
+   * from the preferences.
+   * @param accountManager The account manager to use
+   * @param context The context to use
+   * @param source The authentication url to use. Use null for the default.
+   * @return The account.
+   */
+  @WorkerThread
   public static Account getAccount(final AccountManager accountManager, final Context context, final URI source) {
-    Account [] accounts = getAccounts(accountManager, context, source);
     final String storedAccountName = getStoredAccountName(context);
     if (storedAccountName!=null) {
+      Account [] accounts = getCandidateAccounts(accountManager, context, source);
       for(Account candidate: accounts) {
         if (storedAccountName.equals(candidate.name)) {
           return candidate;
@@ -415,6 +434,17 @@ public class AuthenticatedWebClient {
   private static String getStoredAccountName(final Context context) {
     SharedPreferences preferences = getSharedPreferences(context);
     return preferences.getString(KEY_ACCOUNT_NAME, null);
+  }
+
+  /**
+   * Get an unverified account object for the account to use. This can be used from the UI thread as
+   * there is no verification against the account manager.
+   * @param context The context to use.
+   * @return An account.
+   */
+  public static Account getStoredAccount(final Context context) {
+    final String accountName = getStoredAccountName(context);
+    return TextUtils.isEmpty(accountName) ? null : new Account(accountName, ACCOUNT_TYPE);
   }
 
   public static String getSharedPreferenceName() {
@@ -433,7 +463,15 @@ public class AuthenticatedWebClient {
     }
   }
 
-  public static Account[] getAccounts(final AccountManager accountManager, final Context context, final URI source) {
+  /**
+   * Get candidate accounts known to the account manager.
+   * @param accountManager The account manager to use.
+   * @param context The context to use.
+   * @param source The authentication url to use.
+   * @return A list of current candidate acccounts.
+   */
+  @WorkerThread
+  public static Account[] getCandidateAccounts(final AccountManager accountManager, final Context context, final URI source) {
     Account[] accounts;
     try {
       accounts = accountManager.getAccountsByTypeAndFeatures(ACCOUNT_TYPE, source==null ? null : new String[] {source.toString()}, null, null).getResult();
@@ -448,6 +486,11 @@ public class AuthenticatedWebClient {
     return accounts;
   }
 
+  /**
+   * Record the used account name in a shared preferences file.
+   * @param context The context to use to read the shared preferences.
+   * @param accountname The name of the account.
+   */
   public static void storeUsedAccount(Context context, String accountname) {
     SharedPreferences preferences = getSharedPreferences(context);
     final SharedPreferences.Editor editor = preferences.edit();
@@ -487,7 +530,7 @@ public class AuthenticatedWebClient {
         }
         return null;
       }
-      final Account[] accounts = getAccounts(accountManager, activity, source);
+      final Account[] accounts = getCandidateAccounts(accountManager, activity, source);
       String accountName = getStoredAccountName(activity);
       if (accountName!=null && accounts.length>0) {
         for (Account account: accounts) { if (accountName.equals(account.name)) { return account; }}
