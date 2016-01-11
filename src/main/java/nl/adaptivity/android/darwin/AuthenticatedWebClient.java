@@ -16,27 +16,34 @@
 
 package nl.adaptivity.android.darwin;
 
+import android.Manifest;
+import android.Manifest.permission;
 import android.accounts.*;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
+import nl.adaptivity.android.darwinlib.R;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.security.Permission;
 
 
 /**
@@ -222,6 +229,7 @@ public class AuthenticatedWebClient {
 
   @Nullable
   private HttpURLConnection execute(final WebRequest request, final boolean currentlyInRetry, final int activityRequestCode) throws IOException {
+    Log.d(TAG, "execute() called with: " + "request = [" + request + "], currentlyInRetry = [" + currentlyInRetry + "], activityRequestCode = [" + activityRequestCode + "]");
     final AccountManager accountManager =AccountManager.get(mContext);
     mToken = getAuthToken(accountManager, mAuthbase);
     if (mToken==null) { return null; }
@@ -252,8 +260,9 @@ public class AuthenticatedWebClient {
         } finally {
           errorStream.close();
         }
+        Log.d(TAG, "execute: Invalidating auth token");
+        accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
         if (!currentlyInRetry) { // Do not repeat retry
-          accountManager.invalidateAuthToken(ACCOUNT_TYPE, mToken);
           int activityRequestCode1 = -1;
           return execute(request, true, activityRequestCode1);
         }
@@ -536,18 +545,60 @@ public class AuthenticatedWebClient {
   @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
   private static class Api14Helper {
 
+    private static final int MY_PERMISSIONS_REQUEST_GET_ACCOUNTS = 254;
+
     public static Account ensureAccount(final Activity activity, final URI source, final int chooseRequestCode, final int downloadRequestCode) {
+      if (ContextCompat.checkSelfPermission(activity, permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission.GET_ACCOUNTS)) {
+          // TODO do the entire permission request rigmarole properly.
+          // Show an expanation to the user *asynchronously* -- don't block
+          // this thread waiting for the user's response! After the user
+          // sees the explanation, try again to request the permission.
+
+        } else {
+
+          // No explanation needed, we can request the permission.
+
+          ActivityCompat.requestPermissions(activity,
+                                            new String[]{permission.GET_ACCOUNTS},
+                                            MY_PERMISSIONS_REQUEST_GET_ACCOUNTS);
+
+          // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+          // app-defined int constant. The callback method gets the
+          // result of the request.
+        }
+        return null;
+      }
+
       final AccountManager accountManager = AccountManager.get(activity);
       if (!hasAuthenticator(accountManager)) {
         if (downloadRequestCode>=0) {
           startDownloadDialog(activity, downloadRequestCode);
         } else {
-          Toast.makeText(activity, "The authenticator is not installed", Toast.LENGTH_LONG).show();
+          activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+              Toast.makeText(activity, R.string.error_authenticator_not_installed, Toast.LENGTH_LONG).show();
+            }
+          });
         }
         return null;
       }
-      final Account[] accounts = getCandidateAccounts(accountManager, activity, source);
       String accountName = getStoredAccountName(activity);
+      if (accountName!=null && source !=null) {
+        Account account = new Account(accountName, ACCOUNT_TYPE);
+        try {
+          AccountManagerFuture<Bundle> result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, null, null);
+          if (result.getResult()!=null) {
+            if (accountManager.hasFeatures(account, new String[]{source.toString()}, null, null).getResult()) {
+              return account;
+            }
+          }
+        } catch (SecurityException|OperationCanceledException | IOException | AuthenticatorException e) {
+          Log.w(TAG, "ensureAccount: ", e); // just throw the exception, there is another approach.
+        }
+      }
+      final Account[] accounts = getCandidateAccounts(accountManager, activity, source);
       if (accountName!=null && accounts.length>0) {
         for (Account account: accounts) { if (accountName.equals(account.name)) { return account; }}
       }
