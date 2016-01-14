@@ -548,6 +548,7 @@ public class AuthenticatedWebClient {
     private static final int MY_PERMISSIONS_REQUEST_GET_ACCOUNTS = 254;
 
     public static Account ensureAccount(final Activity activity, final URI source, final int chooseRequestCode, final int downloadRequestCode) {
+      Log.d(TAG, "ensureAccount() called with: " + "activity = [" + activity + "], source = [" + source + "], chooseRequestCode = [" + chooseRequestCode + "], downloadRequestCode = [" + downloadRequestCode + "]");
       if (ContextCompat.checkSelfPermission(activity, permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED) {
         if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission.GET_ACCOUNTS)) {
           // TODO do the entire permission request rigmarole properly.
@@ -588,8 +589,16 @@ public class AuthenticatedWebClient {
       if (accountName!=null && source !=null) {
         Account account = new Account(accountName, ACCOUNT_TYPE);
         try {
-          AccountManagerFuture<Bundle> result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, null, null);
-          if (result.getResult()!=null) {
+          AccountManagerFuture<Bundle> resultFuture = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, true, null, null);
+          Bundle result = resultFuture.getResult();
+          if (result!=null) {
+            if (result.containsKey(AccountManager.KEY_INTENT)) {
+              Intent intent = result.getParcelable(AccountManager.KEY_INTENT);
+              Log.v(TAG, "Received AccountManager result with KEY_INTENT "+intent.getPackage());
+              activity.startActivity(intent);
+              return null;
+            }
+            Log.v(TAG, "Received AccountManager result without KEY_INTENT");
             if (accountManager.hasFeatures(account, new String[]{source.toString()}, null, null).getResult()) {
               return account;
             }
