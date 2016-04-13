@@ -29,6 +29,7 @@ ext {
 
 buildscript {
 	repositories {
+		mavenLocal()
 		jcenter()
 	}
 	dependencies {
