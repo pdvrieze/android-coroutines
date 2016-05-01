@@ -16,11 +16,12 @@
 
 package nl.adaptivity.android.darwin;
 
-import android.Manifest;
 import android.Manifest.permission;
 import android.accounts.*;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,6 +33,8 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -43,7 +46,6 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import java.security.Permission;
 
 
 /**
@@ -244,6 +246,7 @@ public class AuthenticatedWebClient {
 
     HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
     cookie.setDomain(cookieUri.getHost());
+    cookie.setVersion(1);
 
     HttpURLConnection connection = request.getConnection();
     try {
@@ -291,7 +294,21 @@ public class AuthenticatedWebClient {
           final Bundle bundle = future.getResult();
           if (bundle.containsKey(AccountManager.KEY_INTENT)) {
             final Intent intent = (Intent) bundle.get(AccountManager.KEY_INTENT);
-            mContext.startActivity(intent);
+            if (mContext instanceof Activity) {
+              mContext.startActivity(intent);
+            } else {
+              PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, 0);
+              String        contentInfo   = mContext.getString(R.string.notification_authreq_contentInfo);
+              String        actionLabel   = mContext.getString(R.string.notification_authreq_action);
+              Notification  notification  = new NotificationCompat
+                                                        .Builder(mContext)
+                                                        .setSmallIcon(R.drawable.ic_notification)
+                                                        .setContentInfo(contentInfo)
+                                                        .setContentIntent(pendingIntent)
+                                                        .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
+                                                        .build();
+              NotificationManagerCompat.from(mContext).notify(0, notification);
+            }
           }
         } catch (OperationCanceledException | AuthenticatorException | IOException e) {
           Log.d(TAG, "Failed to get account", e);
@@ -417,7 +434,7 @@ public class AuthenticatedWebClient {
    */
   public static URI getAuthBase(final URI uri) {
     if (uri==null) { return null; }
-    return URI.create(uri.getScheme() + "://" + uri.getHost() + "/accounts/");
+    return uri.resolve("/accounts/");
   }
 
   /**
