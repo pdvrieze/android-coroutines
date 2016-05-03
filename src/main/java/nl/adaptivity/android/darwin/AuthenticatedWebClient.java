@@ -46,6 +46,7 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 
 
 /**
@@ -242,18 +243,21 @@ public class AuthenticatedWebClient {
     }
 
     URI cookieUri = request.getUri();
-    cookieUri = cookieUri.resolve("/");
+//    cookieUri = cookieUri.resolve("/");
 
     HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
-    cookie.setDomain(cookieUri.getHost());
     cookie.setVersion(1);
+    cookie.setPath("/");
 
     HttpURLConnection connection = request.getConnection();
+    connection.setRequestProperty(DARWIN_AUTH_COOKIE, mToken);
     try {
       if (connection instanceof HttpsURLConnection) {
         cookie.setSecure(true);
       }
-      mCookieManager.getCookieStore().add(cookieUri, cookie);
+      CookieStore cookieStore = mCookieManager.getCookieStore();
+//      removeConflictingCookies(cookieStore, cookie);
+      cookieStore.add(cookieUri, cookie);
 
 
       if (connection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
@@ -274,6 +278,19 @@ public class AuthenticatedWebClient {
     } catch (Throwable e) { // Catch exception as there would be no way for a caller to disconnect
       connection.disconnect();
       throw e;
+    }
+  }
+
+  private void removeConflictingCookies(final CookieStore cookieStore, final HttpCookie refCookie) {
+    ArrayList<HttpCookie> toRemove = new ArrayList<>();
+    for(HttpCookie existingCookie:cookieStore.getCookies()) {
+      if (existingCookie.getName().equals(refCookie.getName())) toRemove.add(existingCookie);
+    }
+    for(HttpCookie c:toRemove) {
+      cookieStore.remove(null, c);
+      for(URI url: cookieStore.getURIs()) {
+        cookieStore.remove(url, c);
+      }
     }
   }
 
