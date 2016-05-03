@@ -33,14 +33,14 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:1.5.0'
+		classpath "com.android.tools.build:gradle:${androidPluginVersion}"
 //        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
 	}
 }
 
 
 task wrapper(type: Wrapper) {
-	gradleVersion = '2.9'
+	gradleVersion = '2.13'
 }
 
 android {
