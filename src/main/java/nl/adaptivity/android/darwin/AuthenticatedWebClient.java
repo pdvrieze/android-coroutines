@@ -249,16 +249,15 @@ public class AuthenticatedWebClient {
     cookie.setDomain(cookieUri.getHost());
 //    cookie.setVersion(1);
 //    cookie.setPath("/");
+    if ("https".equals(request.getUri().getScheme().toLowerCase())) {
+      cookie.setSecure(true);
+    }
+    CookieStore cookieStore = mCookieManager.getCookieStore();
+    cookieStore.add(cookieUri, cookie);
+    request.setHeader(DARWIN_AUTH_COOKIE, mToken);
 
     HttpURLConnection connection = request.getConnection();
-    connection.setRequestProperty(DARWIN_AUTH_COOKIE, mToken);
     try {
-      if (connection instanceof HttpsURLConnection) {
-        cookie.setSecure(true);
-      }
-      CookieStore cookieStore = mCookieManager.getCookieStore();
-      removeConflictingCookies(cookieStore, cookie);
-      cookieStore.add(cookieUri, cookie);
 
 
       if (connection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
