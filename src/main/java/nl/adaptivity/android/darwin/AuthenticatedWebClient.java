@@ -238,7 +238,7 @@ public class AuthenticatedWebClient {
     if (mToken==null) { return null; }
 
     if (mCookieManager==null) {
-      mCookieManager = new CookieManager();
+      mCookieManager = new CookieManager(new MyCookieStore(), CookiePolicy.ACCEPT_ORIGINAL_SERVER);
       CookieHandler.setDefault(mCookieManager);
     }
 
@@ -246,8 +246,9 @@ public class AuthenticatedWebClient {
 //    cookieUri = cookieUri.resolve("/");
 
     HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
-    cookie.setVersion(1);
-    cookie.setPath("/");
+    cookie.setDomain(cookieUri.getHost());
+//    cookie.setVersion(1);
+//    cookie.setPath("/");
 
     HttpURLConnection connection = request.getConnection();
     connection.setRequestProperty(DARWIN_AUTH_COOKIE, mToken);
@@ -256,7 +257,7 @@ public class AuthenticatedWebClient {
         cookie.setSecure(true);
       }
       CookieStore cookieStore = mCookieManager.getCookieStore();
-//      removeConflictingCookies(cookieStore, cookie);
+      removeConflictingCookies(cookieStore, cookie);
       cookieStore.add(cookieUri, cookie);
 
 
