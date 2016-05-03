@@ -246,7 +246,7 @@ public class AuthenticatedWebClient {
 //    cookieUri = cookieUri.resolve("/");
 
     HttpCookie cookie = new HttpCookie(DARWIN_AUTH_COOKIE, mToken);
-    cookie.setDomain(cookieUri.getHost());
+//    cookie.setDomain(cookieUri.getHost());
 //    cookie.setVersion(1);
 //    cookie.setPath("/");
     if ("https".equals(request.getUri().getScheme().toLowerCase())) {
