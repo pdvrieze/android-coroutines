@@ -317,16 +317,17 @@ public class AuthenticatedWebClient {
               PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, 0);
               String        contentInfo   = mContext.getString(R.string.notification_authreq_contentInfo);
               String        actionLabel   = mContext.getString(R.string.notification_authreq_action);
-              Notification  notification  = new NotificationCompat
-                                                        .Builder(mContext)
-                                                        .setSmallIcon(R.drawable.ic_notification)
-                                                        .setContentInfo(contentInfo)
-                                                        .setContentIntent(pendingIntent)
-                                                        .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
-                                                        .build();
+              Notification notification = new NotificationCompat.Builder(mContext).setSmallIcon(R.drawable.ic_notification)
+                                                                                  .setContentInfo(contentInfo)
+                                                                                  .setContentIntent(pendingIntent)
+                                                                                  .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
+                                                                                  .build();
               NotificationManagerCompat.from(mContext).notify(0, notification);
             }
           }
+        } catch (IllegalArgumentException e) {
+          mAccount=null;
+          Log.w(TAG, "The requested account does not exist");
         } catch (OperationCanceledException | AuthenticatorException | IOException e) {
           Log.d(TAG, "Failed to get account", e);
         }
@@ -346,6 +347,9 @@ public class AuthenticatedWebClient {
       return null;
     } catch (IOException e) {
       Log.e(TAG, "Error logging in: ", e);
+      return null;
+    } catch (IllegalArgumentException e) {
+      Log.e(TAG, "No such account: ", e);
       return null;
     }
     return bundle.getString(AccountManager.KEY_AUTHTOKEN);
