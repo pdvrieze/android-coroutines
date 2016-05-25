@@ -37,6 +37,11 @@ public class AuthenticatedWebClientFactory {
 
   private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
+  public static URI getAuthBase(final URI mBase) {
+    if (mBase==null) { return null; }
+    return mBase.resolve("/accounts");
+  }
+
   static SharedPreferences getSharedPreferences(Context context) {
     return PreferenceManager.getDefaultSharedPreferences(context);
   }
