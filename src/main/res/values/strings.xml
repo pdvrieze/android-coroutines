@@ -23,4 +23,5 @@
     <string name="permission_request_get_accounts">Please provide access to read account details.</string>
     <string name="notification_authreq_contentInfo">DarwinAuth needs some input</string>
     <string name="notification_authreq_action">Go</string>
+    <string name="descriptionOverrideText">Please select the account you want to use.</string>
 </resources>
