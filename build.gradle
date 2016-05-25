@@ -22,9 +22,9 @@ description = 'Android support library for darwin functionality'
 //group = 'android'
 
 ext {
-    if (! has('androidCompatVersion') ) { androidCompatVersion = '23.1.1' }
-    if (! has('androidPluginVersion') ) { androidPluginVersion = '1.5.0' }
-    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '23.0.2' }
+    if (! has('androidCompatVersion') ) { androidCompatVersion = '23.4.0' }
+    if (! has('androidPluginVersion') ) { androidPluginVersion = '2.1.0' }
+    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '23.0.3' }
 }
 
 buildscript {
@@ -48,7 +48,7 @@ android {
     buildToolsVersion "${androidBuildToolsVersion}"
 
     defaultConfig {
-        minSdkVersion 11
+        minSdkVersion 14
         targetSdkVersion 23
         versionCode 2
         versionName version
