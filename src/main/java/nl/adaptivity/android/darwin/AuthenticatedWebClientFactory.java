@@ -66,8 +66,10 @@ public class AuthenticatedWebClientFactory {
     AccountManagerFuture<Boolean> future = am.hasFeatures(account, accountFeatures(source), null, null );
     try {
       return future.getResult();
-    } catch (OperationCanceledException | IOException | AuthenticatorException e) {
+    } catch (OperationCanceledException | IOException e) {
       throw new RuntimeException(e);
+    } catch (AuthenticatorException e) {
+      return false;
     }
   }
 
