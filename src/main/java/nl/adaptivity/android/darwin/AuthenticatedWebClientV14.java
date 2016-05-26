@@ -115,6 +115,7 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
       cookie.setSecure(true);
     }
     CookieStore cookieStore = mCookieManager.getCookieStore();
+    removeConflictingCookies(cookieStore, cookie);
     cookieStore.add(cookieUri, cookie);
     request.setHeader(DARWIN_AUTH_COOKIE, mToken);
 
@@ -148,7 +149,6 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
       if (existingCookie.getName().equals(refCookie.getName())) toRemove.add(existingCookie);
     }
     for (HttpCookie c : toRemove) {
-      cookieStore.remove(null, c);
       for (URI url : cookieStore.getURIs()) {
         cookieStore.remove(url, c);
       }
@@ -156,9 +156,24 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
   }
 
   @WorkerThread
+  public static String getAuthToken(final Activity activity, final URI authBase, Account account) {
+    return getAuthToken(AccountManager.get(activity), activity, authBase, account);
+  }
+
+  @WorkerThread
   private String getAuthToken(final AccountManager accountManager) {
     if (mToken != null) return mToken;
-    if (! AuthenticatedWebClientFactory.isAccountValid(accountManager, mAccount, mAuthBase)) {
+    final Context context = this.mContext;
+    final URI authBase = this.mAuthBase;
+    final Account account = this.mAccount;
+
+    return getAuthToken(accountManager, context, authBase, account);
+
+  }
+
+  @WorkerThread
+  private static String getAuthToken(final AccountManager accountManager, final Context context, final URI authBase, final Account account) {
+    if (! AuthenticatedWebClientFactory.isAccountValid(accountManager, account, authBase)) {
       throw new InvalidAccountException();
     }
 
@@ -170,18 +185,18 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
           final Bundle bundle = future.getResult();
           if (bundle.containsKey(AccountManager.KEY_INTENT)) {
             final Intent intent = (Intent) bundle.get(AccountManager.KEY_INTENT);
-            if (mContext instanceof Activity) {
-              mContext.startActivity(intent);
+            if (context instanceof Activity) {
+              context.startActivity(intent);
             } else {
-              PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, 0);
-              String contentInfo = mContext.getString(R.string.notification_authreq_contentInfo);
-              String actionLabel = mContext.getString(R.string.notification_authreq_action);
-              Notification notification = new NotificationCompat.Builder(mContext).setSmallIcon(R.drawable.ic_notification)
-                                                                                  .setContentInfo(contentInfo)
-                                                                                  .setContentIntent(pendingIntent)
-                                                                                  .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
-                                                                                  .build();
-              NotificationManagerCompat.from(mContext).notify(0, notification);
+              PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
+              String        contentInfo   = context.getString(R.string.notification_authreq_contentInfo);
+              String        actionLabel   = context.getString(R.string.notification_authreq_action);
+              Notification notification = new NotificationCompat.Builder(context).setSmallIcon(R.drawable.ic_notification)
+                                                                                 .setContentInfo(contentInfo)
+                                                                                 .setContentIntent(pendingIntent)
+                                                                                 .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
+                                                                                 .build();
+              NotificationManagerCompat.from(context).notify(0, notification);
             }
           }
         } catch (IllegalArgumentException e) {
@@ -193,7 +208,7 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
       }
     };
     final AccountManagerFuture<Bundle> result;
-    result = accountManager.getAuthToken(mAccount, ACCOUNT_TOKEN_TYPE, null, false, callback, null);
+    result = accountManager.getAuthToken(account, ACCOUNT_TOKEN_TYPE, null, false, callback, null);
 
     final Bundle bundle;
     try {
@@ -206,7 +221,6 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
       return null;
     }
     return bundle.getString(AccountManager.KEY_AUTHTOKEN);
-
   }
 
 }
