@@ -51,8 +51,6 @@ import java.util.ArrayList;
 
 /**
  * A class making it easier to make authenticated requests to darwin.
- *
- * @todo Make this independent of the apache client libraries and use http urlconnection instead.
  */
 public interface AuthenticatedWebClient {
 
