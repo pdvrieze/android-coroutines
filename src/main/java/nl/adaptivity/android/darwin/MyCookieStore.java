@@ -1,6 +1,7 @@
 package nl.adaptivity.android.darwin;
 
 import android.support.annotation.NonNull;
+import android.text.TextUtils.StringSplitter;
 
 import java.net.CookieStore;
 import java.net.HttpCookie;
@@ -41,12 +42,14 @@ public class MyCookieStore implements CookieStore {
         list = new ArrayList<>();
         cookieMap.put(host, list);
       }
+      removeSameCookieFromList(list, cookie);
       list.add(cookie);
 
       try {
         URI cookieUri = getCookieUri(uri);
-        list = uriMap.get(host);
+        list = uriMap.get(cookieUri);
         if (list == null) { list = new ArrayList<>(); uriMap.put(cookieUri, list); }
+        removeSameCookieFromList(list, cookie);
         list.add(cookie);
       } catch (URISyntaxException e) {
         throw new RuntimeException(e);
@@ -56,6 +59,30 @@ public class MyCookieStore implements CookieStore {
     } finally {
       mLock.unlock();
     }
+  }
+
+  private boolean removeSameCookieFromList(final List<HttpCookie> list, final HttpCookie cookie) {
+    if (list==null) { return false; }
+    boolean removed = false;
+    for(Iterator<HttpCookie> iterator = list.iterator(); iterator.hasNext();) {
+      HttpCookie elem = iterator.next();
+      if (cookie.getName().equals(elem.getName()) &&
+          isEqual(elem.getDomain(), cookie.getDomain()) &&
+          isEqualOrNull(elem.getPortlist(), cookie.getPortlist()) &&
+          isEqual(elem.getPath(), cookie.getPath())) {
+        iterator.remove();
+        removed=true;
+      }
+    }
+    return removed;
+  }
+
+  private static boolean isEqual(final Object val1, final Object val2) {
+    return val1==null ? val2==null : val1.equals(val2);
+  }
+
+  private static boolean isEqualOrNull(final Object val1, final Object val2) {
+    return val1==null || val2==null || val1.equals(val2);
   }
 
   @NonNull
@@ -119,8 +146,12 @@ public class MyCookieStore implements CookieStore {
   public boolean remove(final URI uri, final HttpCookie cookie) {
     mLock.lock();
     try {
-
-      return false;
+      boolean result = false;
+      List<HttpCookie> list = cookieMap.get(uri.getHost());
+      result = removeSameCookieFromList(list, cookie);
+      list = uriMap.get(uri);
+      result = removeSameCookieFromList(list, cookie) || result;
+      return result;
     } finally {
       mLock.unlock();
     }
