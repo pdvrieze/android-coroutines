@@ -138,6 +138,13 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
     Request request = new Request(Uri.parse(AUTHENTICATOR_URL));
     request.setDescription("darwin-auth.apk");
     request.setTitle(getString(R.string.download_title));
+    File cacheDir = getActivity().getExternalCacheDir();
+    File apkName = new File(cacheDir, "darwin-auth.apk");
+    if (apkName.exists()) {
+      apkName.delete();
+    }
+
+    request.setDestinationUri(Uri.fromFile(apkName));
     mDownloadReference = downloadManager.enqueue(request);
     getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
   }

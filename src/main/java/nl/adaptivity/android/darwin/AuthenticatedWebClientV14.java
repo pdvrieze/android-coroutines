@@ -156,8 +156,8 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
   }
 
   @WorkerThread
-  public static String getAuthToken(final Activity activity, final URI authBase, Account account) {
-    return getAuthToken(AccountManager.get(activity), activity, authBase, account);
+  public static String getAuthToken(final Context context, final URI authBase, Account account) {
+    return getAuthToken(AccountManager.get(context), context, authBase, account);
   }
 
   @WorkerThread
@@ -172,8 +172,8 @@ class AuthenticatedWebClientV14 implements AuthenticatedWebClient {
   }
 
   @WorkerThread
-  private static String getAuthToken(final AccountManager accountManager, final Context context, final URI authBase, final Account account) {
-    if (! AuthenticatedWebClientFactory.isAccountValid(accountManager, account, authBase)) {
+  static String getAuthToken(final AccountManager accountManager, final Context context, final URI authBase, final Account account) {
+    if (! AuthenticatedWebClientFactory.isAccountValid(context, accountManager, account, authBase)) {
       throw new InvalidAccountException();
     }
 
