@@ -1,5 +1,6 @@
 package nl.adaptivity.android.darwin;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerFuture;
@@ -10,11 +11,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresPermission;
 import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,6 +30,8 @@ import nl.adaptivity.android.darwinlib.R;
  * Created by pdvrieze on 24/05/16.
  */
 public class AuthenticatedWebClientFactory {
+
+  private static final String TAG = "AuthWebClientFty";
 
   private static class ShowAccountTask extends AsyncTask<AuthenticatedWebClientCallbacks, Void, Runnable> {
 
@@ -49,7 +56,7 @@ public class AuthenticatedWebClientFactory {
       }
 
       Account currentAccount = getStoredAccount(mContext);
-      if (!isAccountValid(am, currentAccount, mAuthBase)) {
+      if (!isAccountValid(mContext, am, currentAccount, mAuthBase)) {
         currentAccount=null;
       }
       final Intent selectAccountIntent = selectAccount(mContext, currentAccount, mAuthBase);
@@ -81,8 +88,8 @@ public class AuthenticatedWebClientFactory {
   private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
   @WorkerThread
-  public static String getAuthToken(final Activity activity, final URI authBase, final Account account) {
-    return AuthenticatedWebClientV14.getAuthToken(activity, authBase, account);
+  public static String getAuthToken(final Context context, final URI authBase, final Account account) {
+    return AuthenticatedWebClientV14.getAuthToken(context, authBase, account);
   }
 
   public static URI getAuthBase(final URI mBase) {
@@ -111,18 +118,41 @@ public class AuthenticatedWebClientFactory {
 
   @WorkerThread
   public static boolean isAccountValid(Context context, Account account, URI authBase) {
-    return isAccountValid(AccountManager.get(context), account, authBase);
+    AccountManager accountManager = AccountManager.get(context);
+    return isAccountValid(context, accountManager, account, authBase);
   }
 
+  @WorkerThread
+  @SuppressWarnings("MissingPermission")
+  public static boolean isAccountValid(final Context context, final AccountManager accountManager, final Account account, final URI authBase) {
+    if (ContextCompat.checkSelfPermission(context, Manifest.permission.GET_ACCOUNTS) == PackageManager.PERMISSION_GRANTED) {
+      return isAccountValid(accountManager, account, authBase);
+    } else {
+
+      final AccountManagerFuture<Bundle> result;
+      result = accountManager.getAuthToken(account, AuthenticatedWebClientV14.ACCOUNT_TOKEN_TYPE, null, false, null, null);
+
+      final Bundle bundle;
+      try {
+        bundle = result.getResult();
+      } catch (AuthenticatorException |IOException |OperationCanceledException e) {
+        Log.e(TAG, "Error logging in: ", e);
+        return false;
+      }
+      return true;
+    }
+  }
+
+  @RequiresPermission(Manifest.permission.GET_ACCOUNTS)
   @WorkerThread
   public static boolean isAccountValid(final AccountManager am, final Account account, final URI authBase) {
     if (account==null) { return false; }
     try {
       AccountManagerFuture<Boolean> future = am.hasFeatures(account, accountFeatures(authBase), null, null );
       return future.getResult();
-    } catch (OperationCanceledException | IOException e) {
+    } catch (SecurityException|OperationCanceledException | IOException e) {
       throw new RuntimeException(e);
-    } catch (SecurityException|AuthenticatorException e) {
+    } catch (AuthenticatorException e) {
       return false;
     }
   }
@@ -154,7 +184,7 @@ public class AuthenticatedWebClientFactory {
       options.putString(AuthenticatedWebClient.KEY_AUTH_BASE, authbase.toASCIIString());
     }
 
-    return am.newChooseAccountIntent(account, null, new String[]{AuthenticatedWebClient.ACCOUNT_TYPE}, false, context.getString(R.string.descriptionOverrideText), null, null, options);
+    return AccountManager.newChooseAccountIntent(account, null, new String[]{AuthenticatedWebClient.ACCOUNT_TYPE}, false, context.getString(R.string.descriptionOverrideText), null, null, options);
   }
 
   public static Account handleSelectAcountActivityResult(final Context context, int resultCode, Intent resultData) {
