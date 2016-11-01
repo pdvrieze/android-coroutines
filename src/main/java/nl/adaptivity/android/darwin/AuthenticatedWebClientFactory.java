@@ -135,6 +135,8 @@ public class AuthenticatedWebClientFactory {
       final Bundle bundle;
       try {
         bundle = result.getResult();
+      } catch (IllegalArgumentException e) {
+        return false;
       } catch (AuthenticatorException |IOException |OperationCanceledException e) {
         Log.e(TAG, "Error logging in: ", e);
         return false;
