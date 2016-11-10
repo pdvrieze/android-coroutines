@@ -11,6 +11,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -83,6 +84,8 @@ public class AuthenticatedWebClientFactory {
     void showDownloadDialog();
 
     void startSelectAccountActivity(Intent selectAccount);
+
+    void onDownloadCancelled();
   }
 
   private static final String[] EMPTY_STRING_ARRAY = new String[0];
@@ -127,7 +130,7 @@ public class AuthenticatedWebClientFactory {
   public static boolean isAccountValid(final Context context, final AccountManager accountManager, final Account account, final URI authBase) {
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.GET_ACCOUNTS) == PackageManager.PERMISSION_GRANTED) {
       return isAccountValid(accountManager, account, authBase);
-    } else {
+    } else { // If we are not able to enumerate the accounts use a workaround
 
       final AccountManagerFuture<Bundle> result;
       result = accountManager.getAuthToken(account, AuthenticatedWebClientV14.ACCOUNT_TOKEN_TYPE, null, false, null, null);
@@ -201,7 +204,13 @@ public class AuthenticatedWebClientFactory {
   }
 
   public static boolean handleInstallAuthenticatorActivityResult(final Context context, int resultCode, Intent resultData) {
-    return resultCode==Activity.RESULT_OK;
+    PackageManager pm = context.getPackageManager();
+    try {
+      PackageInfo info = pm.getPackageInfo("uk.ac.bournemouth.darwin.auth", 0);
+      return true;
+    } catch (PackageManager.NameNotFoundException e) {
+      return false;
+    }
   }
 
   @WorkerThread

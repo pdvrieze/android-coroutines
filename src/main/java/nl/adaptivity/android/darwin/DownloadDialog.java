@@ -25,6 +25,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.FileProvider;
 import android.widget.Toast;
 import nl.adaptivity.android.darwinlib.R;
 
@@ -59,8 +60,8 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
             if (data.moveToNext()) {
               int status = data.getInt(data.getColumnIndex(DownloadManager.COLUMN_STATUS));
               if (status==DownloadManager.STATUS_SUCCESSFUL) {
-                mDownloaded = new File(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)));
-                doInstall(context, mDownloaded);
+                mDownloaded = new File(URI.create(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))));
+                doInstall(context, FileProvider.getUriForFile(context, "uk.ac.bmth.scitech.aprog.fileProvider", mDownloaded));
               }
             }
           } finally {
@@ -114,6 +115,9 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
       dialog.dismiss();
     } else {
       dialog.cancel();
+      if(getActivity() instanceof AuthenticatedWebClientFactory.AuthenticatedWebClientCallbacks) {
+        ((AuthenticatedWebClientFactory.AuthenticatedWebClientCallbacks)getActivity()).onDownloadCancelled();
+      }
     }
   }
 
@@ -149,10 +153,11 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
     getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
   }
 
-  private void doInstall(final Context context, final File file) {
-    file.setReadable(true, false);
+  private void doInstall(final Context context, final Uri uri) {
+//    file.setReadable(true, false);
     Intent installIntent = new Intent(Intent.ACTION_VIEW)
-            .setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+            .setDataAndType(uri, "application/vnd.android.package-archive");
+    installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
     if (context instanceof Activity) {
       ((Activity) context).startActivityForResult(installIntent, mRequestCode);
     } else {
