@@ -23,7 +23,7 @@ description = 'Android support library for darwin functionality'
 
 ext {
     if (! has('androidCompatVersion') ) { androidCompatVersion = '24.2.1' }
-    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '24.0.3' }
+    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '25.0.0' }
 }
 
 buildscript {
@@ -38,11 +38,6 @@ buildscript {
 		classpath "com.android.tools.build:gradle:${androidPluginVersion}"
 //        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
 	}
-}
-
-
-task wrapper(type: Wrapper) {
-	gradleVersion = '2.13'
 }
 
 android {
