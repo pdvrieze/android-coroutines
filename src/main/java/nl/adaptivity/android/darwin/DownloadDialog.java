@@ -60,8 +60,13 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
             if (data.moveToNext()) {
               int status = data.getInt(data.getColumnIndex(DownloadManager.COLUMN_STATUS));
               if (status==DownloadManager.STATUS_SUCCESSFUL) {
-                mDownloaded = new File(URI.create(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))));
-                doInstall(context, FileProvider.getUriForFile(context, "uk.ac.bmth.scitech.aprog.fileProvider", mDownloaded));
+                final URI downloadUri = URI.create(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
+                mDownloaded = new File(downloadUri);
+                if (Build.VERSION.SDK_INT>Build.VERSION_CODES.N) {
+                  doInstall(context, FileProvider.getUriForFile(context, "uk.ac.bmth.scitech.aprog.fileProvider", mDownloaded));
+                } else {
+                  doInstall(context, Uri.fromFile(mDownloaded));
+                }
               }
             }
           } finally {
