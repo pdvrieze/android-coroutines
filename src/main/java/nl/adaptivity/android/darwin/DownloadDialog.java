@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.FileProvider;
 import android.widget.Toast;
+import nl.adaptivity.android.darwinlib.BuildConfig;
 import nl.adaptivity.android.darwinlib.R;
 
 import java.io.File;
@@ -61,7 +62,8 @@ public class DownloadDialog extends DialogFragment implements AlertDialog.OnClic
               int status = data.getInt(data.getColumnIndex(DownloadManager.COLUMN_STATUS));
               if (status==DownloadManager.STATUS_SUCCESSFUL) {
                 mDownloaded = new File(URI.create(data.getString(data.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))));
-                doInstall(context, FileProvider.getUriForFile(context, "uk.ac.bmth.scitech.aprog.fileProvider", mDownloaded));
+                String authority = BuildConfig.APPLICATION_ID+".darwinlib.fileProvider";
+                doInstall(context, FileProvider.getUriForFile(context, authority, mDownloaded));
               }
             }
           } finally {

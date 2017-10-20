@@ -22,31 +22,32 @@ description = 'Android support library for darwin functionality'
 //group = 'android'
 
 ext {
-    if (! rootProject.hasProperty('androidCompatVersion') ) { androidCompatVersion = '25.0.1' }
-    if (! rootProject.hasProperty('androidBuildToolsVersion') ) { androidBuildToolsVersion = '25.0.3' }
+    if (! rootProject.hasProperty('androidTarget')) { androidTarget = '25' }
+    if (! rootProject.hasProperty('androidCompatVersion') ) { androidCompatVersion = androidTarget==25 ? '25.3.1' : '26.1.0' }
+    if (! rootProject.hasProperty('androidBuildToolsVersion') ) { androidBuildToolsVersion = androidTarget==25 ? '25.0.3' : '26.0.2' }
 }
 
 buildscript {
     ext {
-        if (! rootProject.hasProperty('androidPluginVersion') ) { androidPluginVersion = '2.2.2' }
+        if (! rootProject.hasProperty('androidPluginVersion') ) { androidPluginVersion = '2.3.3' }
     }
 	repositories {
 		mavenLocal()
 		jcenter()
 	}
 	dependencies {
-		classpath "com.android.tools.build:gradle:${androidPluginVersion}"
+		classpath 'com.android.tools.build:gradle:2.3.0'
 //        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
 	}
 }
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion androidTarget
     buildToolsVersion "${androidBuildToolsVersion}"
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 25
+        targetSdkVersion androidTarget
         versionCode 2
         versionName version
     }
