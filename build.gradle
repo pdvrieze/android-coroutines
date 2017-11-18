@@ -14,9 +14,32 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+buildscript {
+    ext {
+        if (! has('androidPluginVersion') ) { androidPluginVersion = '3.0.0' }
+        if (! has('kotlin_version')) { kotlin_version = '1.1.60' }
+    }
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:${androidPluginVersion}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
+//        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
+    }
+}
+
 apply plugin: 'com.android.library'
 
-version = '1.1.0'
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+version = '1.1.99'
 description = 'Android support library for darwin functionality'
 
 //group = 'android'
@@ -24,20 +47,6 @@ description = 'Android support library for darwin functionality'
 ext {
     if (! has('androidCompatVersion') ) { androidCompatVersion = '26.1.0' }
     if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '26.0.2' }
-}
-
-buildscript {
-    ext {
-        if (! has('androidPluginVersion') ) { androidPluginVersion = '3.0.0' }
-    }
-	repositories {
-		mavenLocal()
-		jcenter()
-	}
-	dependencies {
-		classpath "com.android.tools.build:gradle:${androidPluginVersion}"
-//        classpath 'com.android.tools.build:gradle:2.0.0-alpha3'
-	}
 }
 
 
@@ -63,6 +72,8 @@ android {
 }
 
 dependencies {
-    compile "com.android.support:support-annotations:${androidCompatVersion}"
-    compile "com.android.support:support-v4:${androidCompatVersion}"
+    implementation "com.android.support:support-annotations:${androidCompatVersion}"
+    implementation "com.android.support:support-v4:${androidCompatVersion}"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.19.3"
 }

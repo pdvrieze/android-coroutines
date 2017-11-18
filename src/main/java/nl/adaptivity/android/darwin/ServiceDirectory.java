@@ -33,7 +33,7 @@ import java.nio.charset.Charset;
 
 
 /**
- * Created by pdvrieze on 11/03/16.
+ * Class representing a directory of services.
  */
 public class ServiceDirectory {
 
