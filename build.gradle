@@ -26,7 +26,7 @@ description = 'Android support library for darwin functionality'
 //group = 'android'
 
 ext {
-    if (! rootProject.hasProperty('androidTarget')) { androidTarget = '26' }
+    if (! rootProject.hasProperty('androidTarget')) { androidTarget = 26 }
     if (! rootProject.hasProperty('androidCompatVersion') ) { androidCompatVersion = androidTarget==25 ? '25.3.1' : '26.1.0' }
     if (! rootProject.hasProperty('androidBuildToolsVersion') ) { androidBuildToolsVersion = androidTarget==25 ? '25.0.3' : '26.0.2' }
 }

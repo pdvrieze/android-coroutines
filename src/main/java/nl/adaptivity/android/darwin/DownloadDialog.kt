@@ -67,7 +67,7 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
                                 downloaded = File(data.getUri(DownloadManager.COLUMN_LOCAL_URI))
 
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                    doInstall(context, FileProvider.getUriForFile(context, "${context.applicationInfo.packageName}.fileProvider", downloaded))
+                                    doInstall(context, FileProvider.getUriForFile(context, "${context.applicationInfo.packageName}.darwinlib.fileProvider", downloaded))
                                 } else {
                                     doInstall(context, Uri.fromFile(downloaded))
                                 }
