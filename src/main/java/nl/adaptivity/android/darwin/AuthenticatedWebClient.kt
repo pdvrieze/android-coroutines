@@ -223,7 +223,7 @@ interface AuthenticatedWebClient {
     }
 
     @Throws(IOException::class)
-    fun execute(request: WebRequest): HttpURLConnection
+    fun execute(request: WebRequest): HttpURLConnection?
 
     companion object {
 

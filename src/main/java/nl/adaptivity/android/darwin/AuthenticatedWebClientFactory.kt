@@ -86,7 +86,7 @@ object AuthenticatedWebClientFactory {
     @Suppress("unused")
     @JvmStatic
     @WorkerThread
-    fun getAuthToken(context: Context, authBase: URI, account: Account): String {
+    fun getAuthToken(context: Context, authBase: URI, account: Account): String? {
         return AuthenticatedWebClientV14.getAuthToken(context, authBase, account)
     }
 
@@ -122,7 +122,7 @@ object AuthenticatedWebClientFactory {
     @Suppress("unused")
     @WorkerThread
     @JvmStatic
-    fun isAccountValid(context: Context, account: Account, authBase: URI): Boolean {
+    fun isAccountValid(context: Context, account: Account, authBase: URI?): Boolean {
         val accountManager = AccountManager.get(context)
         return isAccountValid(context, accountManager, account, authBase)
     }
@@ -130,7 +130,7 @@ object AuthenticatedWebClientFactory {
     @SuppressLint("MissingPermission")
     @WorkerThread
     @JvmStatic
-    fun isAccountValid(context: Context, accountManager: AccountManager, account: Account?, authBase: URI): Boolean {
+    fun isAccountValid(context: Context, accountManager: AccountManager, account: Account?, authBase: URI?): Boolean {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.GET_ACCOUNTS) == PackageManager.PERMISSION_GRANTED) {
             return isAccountValid(accountManager, account, authBase)
         } else { // If we are not able to enumerate the accounts use a workaround
@@ -159,7 +159,7 @@ object AuthenticatedWebClientFactory {
     @RequiresPermission(Manifest.permission.GET_ACCOUNTS)
     @WorkerThread
     @JvmStatic
-    fun isAccountValid(am: AccountManager, account: Account?, authBase: URI): Boolean {
+    fun isAccountValid(am: AccountManager, account: Account?, authBase: URI?): Boolean {
         if (account == null) return false
 
         try {
@@ -249,7 +249,7 @@ object AuthenticatedWebClientFactory {
 
     @WorkerThread
     @JvmStatic
-    fun tryEnsureAccount(context: Context, authBase: URI, ensureCallbacks: AuthenticatedWebClientCallbacks): Account? {
+    fun tryEnsureAccount(context: Context, authBase: URI?, ensureCallbacks: AuthenticatedWebClientCallbacks): Account? {
         run {
             val account = getStoredAccount(context) // Get the stored account, if we have one check that it is valid
             if (account != null) {

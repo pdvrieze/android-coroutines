@@ -27,6 +27,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.content.FileProvider
 import android.widget.Toast
+import nl.adaptivity.android.darwinlib.BuildConfig
 import nl.adaptivity.android.darwinlib.R
 
 import java.io.File
@@ -66,8 +67,8 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
 
                                 downloaded = File(data.getUri(DownloadManager.COLUMN_LOCAL_URI))
 
-                                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
-                                    doInstall(context, FileProvider.getUriForFile(context, "uk.ac.bmth.scitech.aprog.fileProvider", downloaded))
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    doInstall(context, FileProvider.getUriForFile(context, "${context.applicationInfo.packageName}.fileProvider", downloaded))
                                 } else {
                                     doInstall(context, Uri.fromFile(downloaded))
                                 }
@@ -90,7 +91,7 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
         }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle): Dialog {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val args = arguments
         requestCode = args.getInt(KEY_REQUEST_CODE, INSTALL_ACTIVITY_REQUEST)
 
