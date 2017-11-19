@@ -14,6 +14,23 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+apply plugin: 'com.android.library'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+version = '1.1.99'
+description = 'Android support library for darwin functionality'
+
+//group = 'android'
+
+ext {
+    if (! rootProject.hasProperty('androidTarget')) { androidTarget = '26' }
+    if (! rootProject.hasProperty('androidCompatVersion') ) { androidCompatVersion = androidTarget==25 ? '25.3.1' : '26.1.0' }
+    if (! rootProject.hasProperty('androidBuildToolsVersion') ) { androidBuildToolsVersion = androidTarget==25 ? '25.0.3' : '26.0.2' }
+}
+
 buildscript {
     ext {
         if (! has('androidPluginVersion') ) { androidPluginVersion = '3.0.0' }
@@ -33,34 +50,18 @@ buildscript {
     }
 }
 
-apply plugin: 'com.android.library'
-
-apply plugin: 'kotlin-android'
-
-apply plugin: 'kotlin-android-extensions'
-
-version = '1.1.99'
-description = 'Android support library for darwin functionality'
-
-//group = 'android'
-
-ext {
-    if (! has('androidCompatVersion') ) { androidCompatVersion = '26.1.0' }
-    if (! has('androidBuildToolsVersion') ) { androidBuildToolsVersion = '26.0.2' }
-}
-
 
 task wrapper(type: Wrapper) {
-	gradleVersion = '2.13'
+	gradleVersion = '4.3.1'
 }
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion androidTarget
     buildToolsVersion "${androidBuildToolsVersion}"
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion androidTarget
         versionCode 2
         versionName version
     }
