@@ -37,7 +37,7 @@ interface AuthenticatedWebClient {
     /**
      * Get the authentication base for this client
      */
-    val authBase: URI
+    val authBase: URI?
 
     /**
      * Get the stored account.

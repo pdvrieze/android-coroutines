@@ -53,7 +53,7 @@ import nl.adaptivity.android.darwinlib.R
  *
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-internal class AuthenticatedWebClientV14(private val context: Context, override val account: Account, override val authBase: URI) : AuthenticatedWebClient {
+internal class AuthenticatedWebClientV14(private val context: Context, override val account: Account, override val authBase: URI?) : AuthenticatedWebClient {
 
     private var token: String? = null
     private var cookieManager: CookieManager? = null
@@ -147,7 +147,7 @@ internal class AuthenticatedWebClientV14(private val context: Context, override 
         }
 
         @WorkerThread
-        fun getAuthToken(accountManager: AccountManager, context: Context, authBase: URI, account: Account): String? {
+        fun getAuthToken(accountManager: AccountManager, context: Context, authBase: URI?, account: Account): String? {
             if (!AuthenticatedWebClientFactory.isAccountValid(context, accountManager, account, authBase)) {
                 throw AuthenticatedWebClient.InvalidAccountException()
             }

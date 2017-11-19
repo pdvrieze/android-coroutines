@@ -235,7 +235,7 @@ object AuthenticatedWebClientFactory {
      */
     @Suppress("UNUSED_PARAMETER")
     @JvmStatic
-    fun handleInstallAuthenticatorActivityResult(context: Context, resultCode: Int, resultData: Intent): Boolean {
+    fun handleInstallAuthenticatorActivityResult(context: Context, resultCode: Int, resultData: Intent?): Boolean {
         val pm = context.packageManager
         try {
             pm.getPackageInfo("uk.ac.bournemouth.darwin.auth", 0)
@@ -284,7 +284,7 @@ object AuthenticatedWebClientFactory {
     }
 
     @JvmStatic
-    fun newClient(context: Context, account: Account, authbase: URI): AuthenticatedWebClient {
+    fun newClient(context: Context, account: Account, authbase: URI?): AuthenticatedWebClient {
         return AuthenticatedWebClientV14(context, account, authbase)
     }
 
