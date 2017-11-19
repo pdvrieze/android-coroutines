@@ -33,20 +33,10 @@ import java.io.File
 import java.net.URI
 
 
-internal inline var Intent.downloadId: Long
-    get() = getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-    set(value) { extras.putLong(DownloadManager.EXTRA_DOWNLOAD_ID, value) }
-
-internal inline val Intent.isActionDownloadComplete get() = action == DownloadManager.ACTION_DOWNLOAD_COMPLETE
-
-internal fun Cursor.getInt(columnName:String) = getInt(getColumnIndex(columnName))
-internal fun Cursor.getString(columnName:String) = getString(getColumnIndex(columnName))
-internal fun Cursor.getUri(columnName:String) = URI.create(getString(getColumnIndex(columnName)))
-
 /**
  * A dialog fragment for downloading the authenticator
  */
-class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
+class SuspDownloadDialog : SuspendableDialog<Boolean>(), DialogInterface.OnClickListener {
     private var downloadReference = -1L
     private var downloaded: File? = null
     private var requestCode = INSTALL_ACTIVITY_REQUEST
@@ -107,12 +97,11 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
 
     override fun onClick(dialog: DialogInterface, which: Int) {
         if (which == Activity.RESULT_OK) {
-            doDownload()
+            super.dispatchResult(true)
             dialog.dismiss()
         } else {
+            super.dispatchResult(false)
             dialog.cancel()
-
-            (activity as? AuthenticatedWebClientFactory.AuthenticatedWebClientCallbacks)?.onDownloadCancelled()
         }
     }
 
@@ -169,8 +158,8 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
         const val KEY_REQUEST_CODE = "requestcode"
 
         @JvmStatic
-        fun newInstance(requestCode: Int): DownloadDialog {
-            val result = DownloadDialog()
+        fun newInstance(requestCode: Int): SuspDownloadDialog {
+            val result = SuspDownloadDialog()
             val b = Bundle(1)
             b.putInt(KEY_REQUEST_CODE, requestCode)
             result.arguments = b

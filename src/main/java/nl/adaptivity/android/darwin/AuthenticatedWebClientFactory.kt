@@ -3,7 +3,6 @@ package nl.adaptivity.android.darwin
 import android.Manifest
 import android.accounts.Account
 import android.accounts.AccountManager
-import android.accounts.AccountManagerFuture
 import android.accounts.AuthenticatorException
 import android.accounts.OperationCanceledException
 import android.annotation.SuppressLint
@@ -20,6 +19,9 @@ import android.support.annotation.UiThread
 import android.support.annotation.WorkerThread
 import android.support.v4.content.ContextCompat
 import android.util.Log
+import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
 
 import java.io.IOException
 import java.net.URI
@@ -247,6 +249,25 @@ object AuthenticatedWebClientFactory {
 
     }
 
+    suspend fun ensureAuthenticator(context: AuthenticationContext): Boolean {
+        if (hasAuthenticator(context.context)) return true
+        val dialog = SuspDownloadDialog.newInstance(context.downloadRequestCode)
+        return dialog.show(context.activity, context.downloadRequestCode) is DialogResult.Success
+    }
+
+    suspend fun ensureAccount(context: AuthenticationContext, authBase: URI?) : Account? {
+        // If we have a stored, valid, account, just return it
+        getStoredAccount(context.context)?.let { account ->
+            if (isAccountValid(context.context, account, authBase)) {
+                return account
+            } else { // Not valid, forget the account
+                setStoredAccount(context.context, null)
+            }
+        }
+        if (!ensureAuthenticator(context)) return null
+        TODO("Rest still needed")
+    }
+
     @WorkerThread
     @JvmStatic
     fun tryEnsureAccount(context: Context, authBase: URI?, ensureCallbacks: AuthenticatedWebClientCallbacks): Account? {
@@ -283,10 +304,26 @@ object AuthenticatedWebClientFactory {
         dialog.show(activity.fragmentManager, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG)
     }
 
+
+
     @JvmStatic
     fun newClient(context: Context, account: Account, authbase: URI?): AuthenticatedWebClient {
         return AuthenticatedWebClientV14(context, account, authbase)
     }
 
+
+    @JvmStatic
+    fun <R> withClient(context: Context, account: Account, authBase: URI?, body: suspend (AuthenticatedWebClient)->R):Deferred<R> {
+        return async {
+
+            val client = newClientAsync(context, account, authBase)
+
+            if (isActive) body(client) else throw CancellationException()
+        }
+    }
+
+    private fun newClientAsync(context: Context, account: Account, authBase: URI?): AuthenticatedWebClient {
+        return AuthenticatedWebClientV14(context, account, authBase)
+    }
 
 }

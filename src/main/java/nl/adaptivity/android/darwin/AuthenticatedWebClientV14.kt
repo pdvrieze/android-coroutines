@@ -65,6 +65,12 @@ internal class AuthenticatedWebClientV14(private val context: Context, override 
     }
 
     @WorkerThread
+    fun execute(request: AuthenticatedWebClient.WebRequest, callback: (HttpURLConnection)->Unit) {
+        val am = AccountManager.get(context)
+
+    }
+
+    @WorkerThread
     @Throws(IOException::class)
     private fun execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean): HttpURLConnection? {
         Log.d(TAG, "execute() called with: request = [$request], currentlyInRetry = [$currentlyInRetry]")
