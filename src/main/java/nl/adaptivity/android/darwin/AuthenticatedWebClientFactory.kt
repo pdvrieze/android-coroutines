@@ -22,6 +22,7 @@ import android.util.Log
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
+import nl.adaptivity.android.coroutines.DialogResult
 
 import java.io.IOException
 import java.net.URI

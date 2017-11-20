@@ -1,4 +1,4 @@
-package nl.adaptivity.android.darwin
+package nl.adaptivity.android.coroutines
 
 import android.app.Activity
 import android.content.DialogInterface
@@ -6,8 +6,6 @@ import android.support.v4.app.DialogFragment
 import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
-import kotlin.coroutines.experimental.Continuation
-import kotlin.coroutines.experimental.suspendCoroutine
 
 
 open class SuspendableDialog<T>: DialogFragment() {
@@ -51,10 +49,10 @@ open class SuspendableDialog<T>: DialogFragment() {
  * Class representing the result of a dialog
  */
 sealed class DialogResult<T> {
-    private object Cancelled:DialogResult<Any>()
+    private object Cancelled: DialogResult<Any>()
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> Cancelled():DialogResult<T> = Cancelled as DialogResult<T>
+    fun <T> Cancelled(): DialogResult<T> = Cancelled as DialogResult<T>
 
-    data class Success<T>(val value: T):DialogResult<T>()
+    data class Success<T>(val value: T): DialogResult<T>()
 }

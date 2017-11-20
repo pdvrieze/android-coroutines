@@ -1,4 +1,4 @@
-package nl.adaptivity.android.darwin
+package nl.adaptivity.android.coroutines
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -31,14 +31,14 @@ open class CoroutineActivity: SupportActivity() {
         }
     }
 
-    fun <A:CoroutineActivity> withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
+    fun <A: CoroutineActivity> withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
         startActivityForResult(intent, REQUEST_CODE_START)
         // Horrible hack to fix generics
         activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
     }
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
-    fun <A:CoroutineActivity> withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
+    fun <A: CoroutineActivity> withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
         startActivityForResult(intent, REQUEST_CODE_START, options)
         activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
     }
@@ -66,7 +66,7 @@ open class CoroutineActivity: SupportActivity() {
         operator fun invoke(activity: A, result: T)
     }
 
-    private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A,T>): Parcelable {
+    private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A, T>): Parcelable {
         @Suppress("UNCHECKED_CAST")
         constructor(parcel: Parcel) :
                 this(parcel.readInt(), parcel.readSerializable() as SerializableHandler<A, T>) {
@@ -94,5 +94,5 @@ open class CoroutineActivity: SupportActivity() {
 
 sealed class ActivityResult {
     object Cancelled: ActivityResult()
-    data class Ok(val data: Intent?):ActivityResult()
+    data class Ok(val data: Intent?): ActivityResult()
 }

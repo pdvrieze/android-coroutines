@@ -21,16 +21,15 @@ import android.app.AlertDialog.Builder
 import android.app.DownloadManager.Query
 import android.app.DownloadManager.Request
 import android.content.*
-import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.content.FileProvider
 import android.widget.Toast
+import nl.adaptivity.android.coroutines.SuspendableDialog
 import nl.adaptivity.android.darwinlib.R
 
 import java.io.File
-import java.net.URI
 
 
 /**
