@@ -34,12 +34,14 @@ open class CoroutineActivity: SupportActivity() {
     fun <A: CoroutineActivity> withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
         startActivityForResult(intent, REQUEST_CODE_START)
         // Horrible hack to fix generics
+        @Suppress("UNCHECKED_CAST")
         activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
     }
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     fun <A: CoroutineActivity> withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
         startActivityForResult(intent, REQUEST_CODE_START, options)
+        @Suppress("UNCHECKED_CAST")
         activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
     }
 
@@ -61,10 +63,10 @@ open class CoroutineActivity: SupportActivity() {
         const val REQUEST_CODE_START = 0xf00;
         const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
     }
-
-    interface SerializableHandler<A: Activity, T>: Serializable {
-        operator fun invoke(activity: A, result: T)
-    }
+//
+//    interface SerializableHandler<A: Activity, T>: Serializable {
+//        operator fun invoke(activity: A, result: T)
+//    }
 
     private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A, T>): Parcelable {
         @Suppress("UNCHECKED_CAST")
@@ -74,7 +76,7 @@ open class CoroutineActivity: SupportActivity() {
 
         override fun writeToParcel(dest: Parcel, flags: Int) {
             dest.writeInt(requestCode)
-            dest.writeSerializable(handler)
+            dest.writeSerializable(handler as Serializable)
         }
 
         override fun describeContents() = 0
@@ -91,6 +93,8 @@ open class CoroutineActivity: SupportActivity() {
     }
 
 }
+
+typealias SerializableHandler<A,T> = A.(T) -> Unit
 
 sealed class ActivityResult {
     object Cancelled: ActivityResult()
