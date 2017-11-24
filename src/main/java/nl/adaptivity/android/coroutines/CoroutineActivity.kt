@@ -1,102 +1,111 @@
 package nl.adaptivity.android.coroutines
 
-import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Fragment
 import android.content.Intent
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.Parcel
+import android.os.Parcelable
 import android.support.annotation.RequiresApi
-import android.support.v4.app.SupportActivity
+import android.util.Log
+import nl.adaptivity.android.kotlin.bundle
+import nl.adaptivity.android.kotlin.set
 import java.io.Serializable
 
 /**
- * Activity class that has additional support for coroutines
+ * Function that starts an activity and uses a callback on the result.
  */
-open class CoroutineActivity: SupportActivity() {
-    private var activityContinuation: ParcelableContinuation<CoroutineActivity, ActivityResult>? = null
+fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
+    // Horrible hack to fix generics
+    @Suppress("UNCHECKED_CAST")
+    val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
+    fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
+    fragmentManager.executePendingTransactions()
+    contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
+}
+
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
+fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
+    // Horrible hack to fix generics
+    @Suppress("UNCHECKED_CAST")
+    val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
+    fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
+    fragmentManager.executePendingTransactions()
+    contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START, options)
+}
+
+const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00;
+
+const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
+
+typealias SerializableHandler<A,T> = A.(T) -> Unit
+
+private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A, T>): Parcelable {
+    @Suppress("UNCHECKED_CAST")
+    constructor(parcel: Parcel) :
+            this(parcel.readInt(), parcel.readSerializable() as SerializableHandler<A, T>) {
+        Log.d(TAG, "Read continuation from parcel")
+    }
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        Log.d(TAG, "Writing continuation to parcel")
+        dest.writeInt(requestCode)
+        dest.writeSerializable(handler as Serializable)
+    }
+
+    override fun describeContents() = 0
+
+    companion object CREATOR : Parcelable.Creator<ParcelableContinuation<Activity, Any?>> {
+        override fun createFromParcel(parcel: Parcel): ParcelableContinuation<Activity, Any?> {
+            return ParcelableContinuation(parcel)
+        }
+
+        override fun newArray(size: Int): Array<ParcelableContinuation<Activity, Any?>?> {
+            return arrayOfNulls(size)
+        }
+
+        @JvmStatic
+        val TAG = ParcelableContinuation.javaClass.simpleName
+    }
+}
+
+sealed class ActivityResult {
+    object Cancelled: ActivityResult()
+    data class Ok(val data: Intent?): ActivityResult()
+}
+
+private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Activity, ActivityResult>) = RetainedContinuationFragment().also {
+    it.arguments = bundle(1) { it[KEY_ACTIVITY_CONTINUATION]= activityContinuation }
+}
+
+class RetainedContinuationFragment : Fragment() {
+    private var activityContinuation: ParcelableContinuation<Activity, ActivityResult>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
+        arguments?.getParcelable<ParcelableContinuation<Activity, ActivityResult>>(KEY_ACTIVITY_CONTINUATION)?.let { activityContinuation = it }
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         val cont = activityContinuation
         when {
             cont == null  ||
-            requestCode != cont.requestCode -> super.onActivityResult(requestCode, resultCode, data)
+                    requestCode != cont.requestCode -> super.onActivityResult(requestCode, resultCode, data)
             resultCode == Activity.RESULT_OK -> {
                 activityContinuation = null
-                cont.handler(this, ActivityResult.Ok(data))
+                cont.handler(activity, ActivityResult.Ok(data))
             }
             resultCode == Activity.RESULT_CANCELED -> {
                 activityContinuation = null
-                cont.handler(this, ActivityResult.Cancelled)
+                cont.handler(activity, ActivityResult.Cancelled)
             }
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
-    fun <A: CoroutineActivity> withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
-        startActivityForResult(intent, REQUEST_CODE_START)
-        // Horrible hack to fix generics
-        @Suppress("UNCHECKED_CAST")
-        activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
-    }
-
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
-    fun <A: CoroutineActivity> withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
-        startActivityForResult(intent, REQUEST_CODE_START, options)
-        @Suppress("UNCHECKED_CAST")
-        activityContinuation = ParcelableContinuation(REQUEST_CODE_START, body) as ParcelableContinuation<CoroutineActivity, ActivityResult>
-    }
-
-
-    @SuppressLint("RestrictedApi")
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        activityContinuation?.let {
-            outState.putParcelable(KEY_ACTIVITY_CONTINUATION, activityContinuation)
-        }
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        activityContinuation = savedInstanceState.getParcelable<ParcelableContinuation<CoroutineActivity, ActivityResult>>(KEY_ACTIVITY_CONTINUATION)
-    }
-
     companion object {
-        const val REQUEST_CODE_START = 0xf00;
-        const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
+        const val TAG = "__RETAINED_CONTINUATION_FRAGMENT__"
     }
-//
-//    interface SerializableHandler<A: Activity, T>: Serializable {
-//        operator fun invoke(activity: A, result: T)
-//    }
-
-    private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A, T>): Parcelable {
-        @Suppress("UNCHECKED_CAST")
-        constructor(parcel: Parcel) :
-                this(parcel.readInt(), parcel.readSerializable() as SerializableHandler<A, T>) {
-        }
-
-        override fun writeToParcel(dest: Parcel, flags: Int) {
-            dest.writeInt(requestCode)
-            dest.writeSerializable(handler as Serializable)
-        }
-
-        override fun describeContents() = 0
-
-        companion object CREATOR : Parcelable.Creator<ParcelableContinuation<Activity, Any?>> {
-            override fun createFromParcel(parcel: Parcel): ParcelableContinuation<Activity, Any?> {
-                return ParcelableContinuation(parcel)
-            }
-
-            override fun newArray(size: Int): Array<ParcelableContinuation<Activity, Any?>?> {
-                return arrayOfNulls(size)
-            }
-        }
-    }
-
-}
-
-typealias SerializableHandler<A,T> = A.(T) -> Unit
-
-sealed class ActivityResult {
-    object Cancelled: ActivityResult()
-    data class Ok(val data: Intent?): ActivityResult()
 }

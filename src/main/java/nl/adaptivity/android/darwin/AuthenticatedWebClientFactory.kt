@@ -22,6 +22,8 @@ import android.util.Log
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
+import nl.adaptivity.android.accountmanager.accountName
+import nl.adaptivity.android.accountmanager.accountType
 import nl.adaptivity.android.coroutines.DialogResult
 
 import java.io.IOException
@@ -187,42 +189,33 @@ object AuthenticatedWebClientFactory {
 
     @JvmStatic
     fun hasAuthenticator(am: AccountManager): Boolean {
-        for (descriptor in am.authenticatorTypes) {
-            if (AuthenticatedWebClient.ACCOUNT_TYPE == descriptor.type) {
-                return true
-            }
-        }
-        return false
+        return am.authenticatorTypes.any { AuthenticatedWebClient.ACCOUNT_TYPE == it.type }
     }
 
 
-    internal fun accountFeatures(authbase: URI?): Array<String?> {
-        return if (authbase == null) {
-            DEFAULT_AUTHBASE_ARRAY
-        } else arrayOf(authbase.toASCIIString())
-    }
+    internal fun accountFeatures(authbase: URI?): Array<String?> =
+            authbase?.let { arrayOf(it.toASCIIString()) } ?: DEFAULT_AUTHBASE_ARRAY
 
     @JvmStatic
     fun selectAccount(context: Context, account: Account?, authbase: URI?): Intent {
-        val options: Bundle?
-        if (authbase == null) {
-            options = null
-        } else {
-            options = Bundle(1).apply { putString(AuthenticatedWebClient.KEY_AUTH_BASE, authbase.toASCIIString()) }
-        }
+        val options = authbase?.let { Bundle(1).apply { putString(AuthenticatedWebClient.KEY_AUTH_BASE, it.toASCIIString()) } }
 
         @Suppress("DEPRECATION")
-        return AccountManager.newChooseAccountIntent(account, null, arrayOf(AuthenticatedWebClient.ACCOUNT_TYPE), false, context.getString(R.string.descriptionOverrideText), null, null, options)
+        return AccountManager.newChooseAccountIntent(account,
+                null,
+                arrayOf(AuthenticatedWebClient.ACCOUNT_TYPE),
+                false,
+                context.getString(R.string.descriptionOverrideText),
+                null,
+                null, options)
     }
 
     @JvmStatic
     fun handleSelectAcountActivityResult(context: Context, resultCode: Int, resultData: Intent): Account? {
         if (resultCode == Activity.RESULT_OK) {
-            val accountName = resultData.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-            val accountType = resultData.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
-            val account = Account(accountName, accountType)
-            setStoredAccount(context, account)
-            return account
+            return with(resultData) { Account(accountName, accountType) }.also { account ->
+                setStoredAccount(context, account)
+            }
         } // else ignore
         return getStoredAccount(context) // Just return the stored account instead.
     }
