@@ -1,12 +1,17 @@
+@file:Suppress("unused")
+
 package nl.adaptivity.android.kryo
 
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.util.DefaultClassResolver
+import com.esotericsoftware.kryo.util.MapReferenceResolver
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -122,6 +127,7 @@ inline fun <reified T> Parcel.readKryoObject(kryo: Kryo = Kryo()) =
 
 fun <T> Parcel.readKryoObject(type:Class<T>, kryo: Kryo = Kryo()): T {
     val size = readInt()
+    @Suppress("UNCHECKED_CAST")
     if (size<=0) return null as T
     val input = ByteArray(size)
     return type.cast(kryo.readClassAndObject(Input(input)))
@@ -133,11 +139,11 @@ fun <T> Parcel.readKryoObject(type:Class<T>, kryo: Kryo = Kryo()): T {
  * things
  */
 private class UnsafeByteArrayOutputStream : ByteArrayOutputStream() {
-    fun buf() = buf
-    fun count() = count
+    fun buf(): ByteArray = buf
+    fun count(): Int = count
 }
 
-private object contextSerializer: Serializer<Context>() {
+private object ContextSerializer : Serializer<Context>() {
     override fun read(kryo: Kryo?, input: Input?, type: Class<Context>?): Context? {
         return null
     }
@@ -148,7 +154,14 @@ private object contextSerializer: Serializer<Context>() {
 }
 
 val kryoNoContext get(): Kryo {
-    return Kryo().apply {
-        register(Context::class.java, contextSerializer)
+    return Kryo(AndroidKotlinResolver(), MapReferenceResolver())
+}
+
+class AndroidKotlinResolver(val contextAllowed: Boolean = false) : DefaultClassResolver() {
+    private val contextRegistration = Registration(Context::class.java, ContextSerializer, -1)
+
+    override fun getRegistration(type: Class<*>?): Registration {
+        if (Context::class.java.isAssignableFrom(type)) return contextRegistration
+        return super.getRegistration(type)
     }
 }
