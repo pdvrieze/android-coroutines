@@ -94,3 +94,9 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.19.3"
 //    compile "org.jetbrains.anko:anko-commons:$anko_version"
 }
+
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}

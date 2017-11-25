@@ -139,14 +139,14 @@ private class InitializedWeakLazyImpl<out T>(override val value: T) : WeakLazy<T
 
 }
 
-private class SafePublicationWeakLazyImpl<out T>(initializer: () -> T) : WeakLazy<T>, Serializable {
-    private val initializer: (() -> T) = initializer
+private class SafePublicationWeakLazyImpl<out T>(private val initializer: () -> T) : WeakLazy<T>, Serializable {
     @Volatile private var _value: WeakReference<Any?>? = null
     // this final field is required to enable safe publication of constructed instance
     private val final: Any = NULL_VALUE
 
     override val value: T
         get() {
+            @Suppress("CanBeVal")
             var initialValue = _value?.get()
             if (initialValue == null) {
                 val newValue = initializer()
@@ -160,6 +160,7 @@ private class SafePublicationWeakLazyImpl<out T>(initializer: () -> T) : WeakLaz
                     }
                     // weak reference dropped
                 }
+                @Suppress("RecursivePropertyAccessor")
                 return value /* recursively call itself, but both new and initial values are in handle so
                                 nothing should have been garbage collected.*/
             }

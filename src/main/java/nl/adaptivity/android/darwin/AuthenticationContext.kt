@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 
 /**
- * Created by pdvrieze on 19/11/17.
+ * Helper interface. Not sure that it is needed.
  */
 interface AuthenticationContext {
     val context: Context get() = activity

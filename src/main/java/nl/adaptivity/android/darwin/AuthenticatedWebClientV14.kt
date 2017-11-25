@@ -140,7 +140,7 @@ internal class AuthenticatedWebClientV14(override val account: Account, override
         if ("https" == request.uri.scheme.toLowerCase()) {
             cookie.secure = true
         }
-        val cookieStore = cookieManager!!.cookieStore
+        val cookieStore = cookieManager.cookieStore
         removeConflictingCookies(cookieStore, cookie)
         cookieStore.add(cookieUri, cookie)
         request.setHeader(AuthenticatedWebClient.DARWIN_AUTH_COOKIE, token!!)

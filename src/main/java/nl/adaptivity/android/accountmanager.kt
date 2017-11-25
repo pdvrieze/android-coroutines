@@ -1,4 +1,5 @@
 @file:JvmName("AccountManagerUtil")
+@file:Suppress("PackageDirectoryMismatch")
 
 package nl.adaptivity.android.accountmanager
 
