@@ -11,6 +11,9 @@ import android.support.annotation.RequiresApi
 import android.util.Log
 import nl.adaptivity.android.kotlin.bundle
 import nl.adaptivity.android.kotlin.set
+import nl.adaptivity.android.kryo.kryoNoContext
+import nl.adaptivity.android.kryo.readKryoObject
+import nl.adaptivity.android.kryo.writeKryoObject
 import java.io.Serializable
 
 /**
@@ -48,14 +51,14 @@ typealias SerializableHandler<A,T> = A.(T) -> Unit
 private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val handler: SerializableHandler<A, T>): Parcelable {
     @Suppress("UNCHECKED_CAST")
     constructor(parcel: Parcel) :
-            this(parcel.readInt(), parcel.readSerializable() as SerializableHandler<A, T>) {
+            this(parcel.readInt(), parcel.readKryoObject()) {
         Log.d(TAG, "Read continuation from parcel")
     }
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
         Log.d(TAG, "Writing continuation to parcel")
         dest.writeInt(requestCode)
-        dest.writeSerializable(handler as Serializable)
+        dest.writeKryoObject(handler, kryoNoContext)
     }
 
     override fun describeContents() = 0
