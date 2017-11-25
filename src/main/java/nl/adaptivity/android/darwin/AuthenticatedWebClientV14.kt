@@ -35,6 +35,9 @@ import android.support.annotation.WorkerThread
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.util.Log
+import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.launch
+import nl.adaptivity.android.accountmanager.getAuthToken
 
 import java.io.IOException
 import java.net.CookieHandler
@@ -53,36 +56,78 @@ import nl.adaptivity.android.darwinlib.R
  *
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-internal class AuthenticatedWebClientV14(private val context: Context, override val account: Account, override val authBase: URI?) : AuthenticatedWebClient {
+internal class AuthenticatedWebClientV14(override val account: Account, override val authBase: URI?) : AuthenticatedWebClient {
 
     private var token: String? = null
-    private var cookieManager: CookieManager? = null
-
-    @WorkerThread
-    @Throws(IOException::class)
-    override fun execute(request: AuthenticatedWebClient.WebRequest): HttpURLConnection? {
-        return execute(request, false)
-    }
-
-    @WorkerThread
-    fun execute(request: AuthenticatedWebClient.WebRequest, callback: (HttpURLConnection)->Unit) {
-        val am = AccountManager.get(context)
-
+    private val cookieManager: CookieManager by lazy<CookieManager> {
+        CookieManager(MyCookieStore(), CookiePolicy.ACCEPT_ORIGINAL_SERVER).also {
+            CookieHandler.setDefault(it)
+        }
     }
 
     @WorkerThread
     @Throws(IOException::class)
-    private fun execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean): HttpURLConnection? {
-        Log.d(TAG, "execute() called with: request = [$request], currentlyInRetry = [$currentlyInRetry]")
-        val accountManager = AccountManager.get(context)
-        token = getAuthToken(accountManager)
-        if (token == null) {
-            return null
+    override fun execute(context: Context, request: AuthenticatedWebClient.WebRequest): HttpURLConnection? {
+        return execute(context, request, false)
+    }
+
+    //    @WorkerThread
+    override fun Activity.execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean, onError: (HttpURLConnection)->Unit, callback: (HttpURLConnection)->Unit): Job {
+        val context = this.applicationContext
+        return launch {
+            val am = AccountManager.get(context)
+
+            val token = am.getAuthToken(activity = this@execute, account = account, authTokenType = AuthenticatedWebClient.ACCOUNT_TOKEN_TYPE, restart ={ execute(request, false, onError, callback) })
+            if (token!=null) {
+
+                val cookieUri = request.uri
+                //    cookieUri = cookieUri.resolve("/");
+
+                val cookie = HttpCookie(AuthenticatedWebClient.DARWIN_AUTH_COOKIE, token)
+                //    cookie.setDomain(cookieUri.getHost());
+                //    cookie.setVersion(1);
+                //    cookie.setPath("/");
+                if ("https" == request.uri.scheme.toLowerCase()) {
+                    cookie.secure = true
+                }
+                val cookieStore = cookieManager.cookieStore
+                removeConflictingCookies(cookieStore, cookie)
+                cookieStore.add(cookieUri, cookie)
+                request.setHeader(AuthenticatedWebClient.DARWIN_AUTH_COOKIE, token)
+
+                val connection = request.connection
+                try {
+
+                    when {
+                        connection.responseCode in 200..399 -> callback(connection)
+                        connection.responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && !currentlyInRetry -> {
+                            connection.errorStream.use { errorStream ->
+                                errorStream.skip(Integer.MAX_VALUE.toLong())
+                            }
+
+                            Log.d(TAG, "execute: Invalidating auth token")
+                            am.invalidateAuthToken(AuthenticatedWebClient.ACCOUNT_TYPE, token)
+                            execute(request, true, onError, callback)
+                        }
+                        else -> onError(connection)
+                    }
+                } finally { // Catch exception as there would be no way for a caller to disconnect
+                    connection.disconnect()
+                }
+
+            }
         }
 
-        if (cookieManager == null) {
-            cookieManager = CookieManager(MyCookieStore(), CookiePolicy.ACCEPT_ORIGINAL_SERVER)
-            CookieHandler.setDefault(cookieManager)
+    }
+
+    @WorkerThread
+    @Throws(IOException::class)
+    private fun execute(context: Context, request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean): HttpURLConnection? {
+        Log.d(TAG, "execute() called with: request = [$request], currentlyInRetry = [$currentlyInRetry]")
+        val accountManager = AccountManager.get(context)
+        token = getAuthToken(context, accountManager)
+        if (token == null) {
+            return null
         }
 
         val cookieUri = request.uri
@@ -112,7 +157,7 @@ internal class AuthenticatedWebClientV14(private val context: Context, override 
                 Log.d(TAG, "execute: Invalidating auth token")
                 accountManager.invalidateAuthToken(AuthenticatedWebClient.ACCOUNT_TYPE, token)
                 if (!currentlyInRetry) { // Do not repeat retry
-                    return execute(request, true)
+                    return execute(context, request, true)
                 }
             }
             return connection
@@ -133,13 +178,10 @@ internal class AuthenticatedWebClientV14(private val context: Context, override 
     }
 
     @WorkerThread
-    private fun getAuthToken(accountManager: AccountManager): String? {
+    private fun getAuthToken(context: Context, accountManager: AccountManager): String? {
         if (token != null) return token
-        val context = this.context
-        val authBase = this.authBase
-        val account = this.account
 
-        return getAuthToken(accountManager, context, authBase, account)
+        return getAuthToken(accountManager, context, this.authBase, this.account)
 
     }
 

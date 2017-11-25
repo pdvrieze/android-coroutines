@@ -34,7 +34,7 @@ import java.net.URI
  * @property uri The location of the service
  * @property extra Any additional information
  */
-public class Service(val name: String, val protocol: String?, private val uri: URI?, val extra: String?) {
+class Service(val name: String, val protocol: String?, private val uri: URI?, val extra: String?) {
 
     /**
      * Get a JSon representation of the service.

@@ -19,7 +19,7 @@ fun <T> weakLazy(initializer: () -> T): WeakLazy<T> = SynchronizedWeakLazyImpl(i
  * to synchronize on. Do not synchronize from external code on the returned instance as it may cause accidental deadlock.
  * Also this behavior can be changed in the future.
  */
-public fun <T> weakLazy(mode: LazyThreadSafetyMode, initializer: () -> T): WeakLazy<T> =
+fun <T> weakLazy(mode: LazyThreadSafetyMode, initializer: () -> T): WeakLazy<T> =
         when (mode) {
             LazyThreadSafetyMode.SYNCHRONIZED -> SynchronizedWeakLazyImpl(initializer)
             LazyThreadSafetyMode.PUBLICATION -> SafePublicationWeakLazyImpl(initializer)
@@ -37,7 +37,7 @@ public fun <T> weakLazy(mode: LazyThreadSafetyMode, initializer: () -> T): WeakL
  * in this case do not synchronize from external code on the returned instance as it may cause accidental deadlock.
  * Also this behavior can be changed in the future.
  */
-public fun <T> weakLazy(lock: Any?, initializer: () -> T): WeakLazy<T> = SynchronizedWeakLazyImpl(initializer, lock)
+fun <T> weakLazy(lock: Any?, initializer: () -> T): WeakLazy<T> = SynchronizedWeakLazyImpl(initializer, lock)
 
 /**
  * An extension to delegate a read-only property of type [T] to an instance of [Lazy].
@@ -46,24 +46,25 @@ public fun <T> weakLazy(lock: Any?, initializer: () -> T): WeakLazy<T> = Synchro
  * `val property: String by lazy { initializer }`
  */
 @Suppress("NOTHING_TO_INLINE")
-public inline operator fun <T> WeakLazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T = value
+inline operator fun <T> WeakLazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T = value
 
 /**
  * Represents a value with lazy initialization.
  *
  * To create an instance of [Lazy] use the [lazy] function.
  */
-public interface WeakLazy<out T> {
+interface WeakLazy<out T> {
     /**
      * Gets the lazily initialized value of the current Lazy instance.
      * Once the value was initialized it must not change during the rest of lifetime of this Lazy instance.
      */
-    public val value: T
+    val value: T
+
     /**
      * Returns `true` if a value for this Lazy instance has been already initialized, and `false` otherwise.
      * Once this function has returned `true` it stays `true` for the rest of lifetime of this Lazy instance.
      */
-    public fun isInitialized(): Boolean
+    fun isInitialized(): Boolean
 }
 
 private object NULL_VALUE

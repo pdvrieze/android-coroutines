@@ -35,7 +35,7 @@ fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: S
     contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START, options)
 }
 
-const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00;
+const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00
 
 const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
 

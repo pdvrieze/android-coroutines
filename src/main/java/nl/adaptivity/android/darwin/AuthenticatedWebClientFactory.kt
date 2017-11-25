@@ -302,7 +302,7 @@ object AuthenticatedWebClientFactory {
 
     @JvmStatic
     fun newClient(context: Context, account: Account, authbase: URI?): AuthenticatedWebClient {
-        return AuthenticatedWebClientV14(context, account, authbase)
+        return AuthenticatedWebClientV14(account, authbase)
     }
 
 
@@ -317,7 +317,7 @@ object AuthenticatedWebClientFactory {
     }
 
     private fun newClientAsync(context: Context, account: Account, authBase: URI?): AuthenticatedWebClient {
-        return AuthenticatedWebClientV14(context, account, authBase)
+        return AuthenticatedWebClientV14(account, authBase)
     }
 
 }

@@ -17,7 +17,10 @@
 package nl.adaptivity.android.darwin
 
 import android.accounts.Account
+import android.app.Activity
+import android.content.Context
 import android.support.annotation.CallSuper
+import kotlinx.coroutines.experimental.Job
 import nl.adaptivity.kotlin.getValue
 import nl.adaptivity.kotlin.weakLazy
 import java.io.IOException
@@ -223,7 +226,10 @@ interface AuthenticatedWebClient {
     }
 
     @Throws(IOException::class)
-    fun execute(request: WebRequest): HttpURLConnection?
+    fun execute(context: Context, request: WebRequest): HttpURLConnection?
+
+    @Throws(IOException::class)
+    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection) -> Unit = {}, callback: (HttpURLConnection) -> Unit): Job
 
     companion object {
 
