@@ -21,8 +21,10 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<
     @Suppress("UNCHECKED_CAST")
     val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
     fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
-    fragmentManager.executePendingTransactions()
-    contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
+    runOnUiThread {
+        fragmentManager.executePendingTransactions()
+        contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -31,8 +33,10 @@ fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: S
     @Suppress("UNCHECKED_CAST")
     val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
     fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
-    fragmentManager.executePendingTransactions()
-    contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START, options)
+    runOnUiThread {
+        fragmentManager.executePendingTransactions()
+        contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START, options)
+    }
 }
 
 const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00
@@ -66,7 +70,7 @@ private class ParcelableContinuation<A:Activity, T>(val requestCode: Int, val ha
         }
 
         @JvmStatic
-        val TAG = ParcelableContinuation.javaClass.simpleName
+        val TAG = ParcelableContinuation::class.java.simpleName
     }
 }
 
