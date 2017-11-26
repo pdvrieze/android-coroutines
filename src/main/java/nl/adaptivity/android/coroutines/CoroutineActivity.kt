@@ -121,6 +121,9 @@ sealed class ActivityResult {
     }
 
     abstract fun <R> map(function: (Intent?) -> R): R?
+
+    inline fun <R> onCancelled(function: () -> R):R? = if (this is Cancelled) function() else null
+    inline fun <R> onOk(function: (Intent?) -> R):R? = if (this is Ok) function(data) else null
 }
 
 private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Activity, ActivityResult>) = RetainedContinuationFragment().also {
