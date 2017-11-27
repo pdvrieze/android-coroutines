@@ -225,6 +225,14 @@ sealed class Maybe<out T> {
 
     abstract fun <R> flatMap(function: (T) -> R): R?
 
+    fun <R> map(function: (T) -> R): Maybe<R> {
+        @Suppress("UNCHECKED_CAST")
+        return when(this) {
+            is Ok -> Ok(function(data))
+            else -> this as Maybe<R>
+        }
+    }
+
     inline fun <R> onError(function: (Exception) -> R):R? = if (this is Error) function(e) else null
     inline fun <R> onCancelled(function: () -> R):R? = if (this is Cancelled) function() else null
     inline fun <R> onOk(function: (T) -> R):R? = if (this is Ok) function(data) else null
@@ -234,6 +242,7 @@ sealed class Maybe<out T> {
 
         inline fun <T> cancelled(): Maybe<T> = Cancelled as Maybe<T>
     }
+
 }
 
 private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Maybe<Intent?>>) = RetainedContinuationFragment().also {

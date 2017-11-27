@@ -21,13 +21,12 @@ import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.util.Log
 import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.experimental.NonCancellable.isActive
+import nl.adaptivity.android.accountmanager.account
 import nl.adaptivity.android.accountmanager.accountName
 import nl.adaptivity.android.accountmanager.accountType
 import nl.adaptivity.android.accountmanager.hasFeatures
-import nl.adaptivity.android.coroutines.ActivityResult
-import nl.adaptivity.android.coroutines.Maybe
-import nl.adaptivity.android.coroutines.DialogResult
-import nl.adaptivity.android.coroutines.activityResult
+import nl.adaptivity.android.coroutines.*
 import nl.adaptivity.android.darwinlib.R
 import java.io.File
 import java.io.IOException
@@ -139,8 +138,15 @@ object AuthenticatedWebClientFactory {
     @RequiresPermission(Manifest.permission.GET_ACCOUNTS)
     @WorkerThread
     @JvmStatic
+    @Deprecated("Use suspend version", ReplaceWith("am.isAccountValid(account, authBase)"))
     fun isAccountValid(am: AccountManager, account: Account?, authBase: URI?): Boolean {
-        return runBlocking { am.isAccountValid(account, authBase) }
+        if (account == null) return false
+
+        try {
+            return am.hasFeatures(account, AuthenticatedWebClientFactory.accountFeatures(authBase), null, null).result
+        } catch (e: AuthenticatorException) {
+            return false
+        }
     }
 
 
@@ -205,28 +211,31 @@ object AuthenticatedWebClientFactory {
 
     }
 
-    suspend fun ensureAuthenticator(context: AuthenticationContext): Boolean {
-        if (hasAuthenticator(context.context)) return true
-        val dialog = SuspDownloadDialog.newInstance(context.downloadRequestCode)
-        return dialog.show(context.activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG) is DialogResult.Success<*>
+    suspend fun ensureAuthenticator(activity: Activity): Boolean {
+        if (hasAuthenticator(activity)) return true
+        return tryDownloadAndInstallAuthenticator(activity) is Maybe.Ok
     }
 
-    suspend fun ensureAccount(context: AuthenticationContext, authBase: URI?) : Maybe<Account> {
+    suspend fun ensureAccount(activity: Activity, authBase: URI?) : Maybe<Account?> {
         // If we have a stored, valid, account, just return it
-        getStoredAccount(context.context)?.let { account ->
-            if (isAccountValid(context.context, account, authBase)) {
+        getStoredAccount(activity)?.let { account ->
+            if (isAccountValid(activity, account, authBase)) {
                 return Maybe.Ok(account)
             } else { // Not valid, forget the account
-                setStoredAccount(context.context, null)
+                setStoredAccount(activity, null)
             }
         }
-        if (!ensureAuthenticator(context)) return Maybe.cancelled()
-        TODO("Rest still needed")
+        if (!ensureAuthenticator(activity)) return Maybe.cancelled()
+        return activity.activityResult(selectAccount(activity, null, authBase)).map { it?.account }
     }
 
-    @WorkerThread
     @JvmStatic
-    fun tryEnsureAccount(context: Context, authBase: URI?, ensureCallbacks: AuthenticatedWebClientCallbacks): Account? {
+    fun tryEnsureAccount(context: Activity, authBase: URI?, callback: SerializableHandler<Activity, Maybe<Account?>>): Account? {
+        async(start = CoroutineStart.UNDISPATCHED) {
+            callback(context, ensureAccount(context, authBase))
+        }
+/*
+
         run {
             val account = getStoredAccount(context) // Get the stored account, if we have one check that it is valid
             if (account != null) {
@@ -242,26 +251,42 @@ object AuthenticatedWebClientFactory {
         }
         val selectAccount = selectAccount(context, null, authBase)
         ensureCallbacks.startSelectAccountActivity(selectAccount)
+*/
 
         return null
     }
 
-    fun showDownloadDialog(activity: Activity) {
-        async {
-            if (SuspDownloadDialog.newInstance(-1).show(activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG).flatMap() != true) {
-                return@async
-            }
-            val downloadedApk = DownloadFragment.download(activity, Uri.parse(AUTHENTICATOR_URL))?: return@async
-
-            val downloaded = File(downloadedApk)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                doInstall(activity, FileProvider.getUriForFile(activity, "${activity.applicationInfo.packageName}.darwinlib.fileProvider", downloaded))
-            } else {
-                doInstall(activity, Uri.fromFile(downloaded))
-            }
+    @JvmStatic
+    fun tryDownloadAndInstallAuthenticator(activity: Activity, handler: SerializableHandler<Activity, ActivityResult>) {
+        launch {
+            handler(activity, tryDownloadAndInstallAuthenticator(activity))
         }
     }
+
+    @JvmStatic
+    fun doShowDownloadDialog(activity: Activity, handler: SerializableHandler<Activity, ActivityResult>) {
+        return tryDownloadAndInstallAuthenticator(activity, handler)
+    }
+
+    suspend fun tryDownloadAndInstallAuthenticator(activity: Activity): ActivityResult {
+        if (SuspDownloadDialog.newInstance(-1).show(activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG).flatMap() != true) {
+            return Maybe.cancelled()
+        }
+        if (!isActive) return Maybe.cancelled()
+
+        val downloadedApk = DownloadFragment.download(activity, Uri.parse(AUTHENTICATOR_URL))
+        if (!isActive) return Maybe.cancelled()
+
+        val downloaded = File(downloadedApk)
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            doInstall(activity, FileProvider.getUriForFile(activity, "${activity.applicationInfo.packageName}.darwinlib.fileProvider", downloaded))
+        } else {
+            doInstall(activity, Uri.fromFile(downloaded))
+        }
+    }
+
+
 
     suspend fun doInstall(activity: Activity, uri: Uri): ActivityResult {
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -269,17 +294,6 @@ object AuthenticatedWebClientFactory {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         return activity.activityResult(installIntent)
-    }
-
-
-
-    @JvmStatic
-    fun doShowDownloadDialog(activity: Activity, requestCode: Int) {
-        launch {
-            showDownloadDialog(activity)
-        }
-//        val dialog = DownloadDialog.newInstance(requestCode)
-//        dialog.show(activity.fragmentManager, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG)
     }
 
 

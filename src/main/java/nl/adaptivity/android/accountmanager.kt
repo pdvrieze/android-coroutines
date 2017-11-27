@@ -7,10 +7,7 @@ import android.accounts.*
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import kotlinx.coroutines.experimental.CancellableContinuation
-import kotlinx.coroutines.experimental.CancellationException
-import kotlinx.coroutines.experimental.runBlocking
-import kotlinx.coroutines.experimental.suspendCancellableCoroutine
+import kotlinx.coroutines.experimental.*
 import nl.adaptivity.android.coroutines.Maybe
 import nl.adaptivity.android.coroutines.withActivityResult
 import nl.adaptivity.android.kotlin.getValue
@@ -18,6 +15,10 @@ import nl.adaptivity.android.kotlin.weakRef
 
 val Intent.accountName get() = getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 val Intent.accountType get() = getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
+val Intent.account: Account? get() {
+    return Account(accountName ?: return null, accountType ?: return null)
+}
+
 val Bundle.intent get() = get(AccountManager.KEY_INTENT) as Intent
 
 suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null): String? {
@@ -38,7 +39,7 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
                     activity?.withActivityResult(intent) { activityResult ->
                         when (activityResult) {
                             is Maybe.Cancelled -> cont.cancel()
-                            is Maybe.Ok -> cont.resume(runBlocking { getAuthToken(activity, account, authTokenType, options) })
+                            is Maybe.Ok -> async { cont.resume(getAuthToken(activity, account, authTokenType, options)) }
                         }
                     }
                     return@AccountManagerCallback

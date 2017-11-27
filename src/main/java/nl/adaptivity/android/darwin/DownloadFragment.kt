@@ -32,7 +32,7 @@ class DownloadFragment(): Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let { continuation = it.getParcelable<ParcelableContinuation<URI?>>(KEY_CONTINUATION) }
+        arguments?.let { continuation = it.getParcelable(KEY_CONTINUATION) }
     }
 
     private val broadcastReceiver = object : BroadcastReceiver() {
@@ -44,12 +44,15 @@ class DownloadFragment(): Fragment() {
                     val query = DownloadManager.Query()
                     query.setFilterById(downloadReference)
                     downloadManager.query(query).use { data ->
-                        val cont = continuation as ParcelableContinuation<URI>?
+                        val cont = continuation
                         if (data.moveToNext()) {
-                            if (data.getInt(DownloadManager.COLUMN_STATUS) == DownloadManager.STATUS_SUCCESSFUL) {
+                            val status = data.getInt(DownloadManager.COLUMN_STATUS)
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
                                 cont?.resume(context, data.getUri(DownloadManager.COLUMN_LOCAL_URI))
-                            } else {
+                                continuation = null
+                            } else if (status == DownloadManager.STATUS_FAILED) {
                                 cont?.cancel(context)
+                                continuation = null
                             }
                         }
                     }
