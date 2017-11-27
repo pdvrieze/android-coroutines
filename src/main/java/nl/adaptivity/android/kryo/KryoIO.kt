@@ -2,9 +2,7 @@
 
 package nl.adaptivity.android.kryo
 
-import android.app.Activity
 import android.app.Application
-import android.app.Service
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
@@ -14,13 +12,17 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
+import com.esotericsoftware.kryo.serializers.FieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultClassResolver
 import com.esotericsoftware.kryo.util.MapReferenceResolver
+import kotlinx.coroutines.experimental.CommonPool
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
-import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.intrinsics.COROUTINE_SUSPENDED
+import org.objenesis.strategy.StdInstantiatorStrategy
+
+
 
 /**
  * Input class that uses a parcel to serialize. Perhaps not sustainable and ByteArrayStreams are better.
@@ -155,55 +157,53 @@ private class UnsafeByteArrayOutputStream : ByteArrayOutputStream() {
     fun count(): Int = count
 }
 
-private class ContextSerializer(private val context: Context) : Serializer<Context>() {
-
-    enum class CONTEXT_STORAGE { APPLICATIONCONTEXT, ACTIVITY, SERVICE }
+private class ContextSerializer(private val context: Context?) : Serializer<android.content.Context>() {
 
     override fun read(kryo: Kryo, input: Input, type: Class<Context>): Context? {
-        return when (kryo.readObject(input, CONTEXT_STORAGE::class.java)) {
-            CONTEXT_STORAGE.APPLICATIONCONTEXT -> context as Application
-            CONTEXT_STORAGE.ACTIVITY -> context as Activity
-            CONTEXT_STORAGE.SERVICE -> context as Service
-            null -> null
+        val result: Context? = when (kryo.readObject(input, KryoAndroidConstants::class.java)) {
+            KryoAndroidConstants.CONTEXT -> type.cast(context)
+            KryoAndroidConstants.APPLICATIONCONTEXT -> type.cast(context?.applicationContext)
+            else -> null
         }
+        return result?.also { kryo.reference(it) }
     }
 
     override fun write(kryo: Kryo, output: Output, obj: Context?) {
         when (obj) {
-            is Activity -> kryo.writeObject(output, CONTEXT_STORAGE.ACTIVITY )
-            is Application -> kryo.writeObject(output, CONTEXT_STORAGE.APPLICATIONCONTEXT)
-            is Service -> kryo.writeObject(output, CONTEXT_STORAGE.SERVICE)
+            is Context -> kryo.writeObject(output, KryoAndroidConstants.CONTEXT)
+            is Application -> kryo.writeObject(output, KryoAndroidConstants.APPLICATIONCONTEXT)
             else -> throw IllegalArgumentException("Serializing contexts only works for activity, application and service")
         }
 
     }
 }
 
-enum class ContinuationValues {
+enum class KryoAndroidConstants {
     UNDECIDED,
     RESUMED,
-    COROUTINE_SUSPENDED
+    COROUTINE_SUSPENDED,
+    APPLICATIONCONTEXT,
+    CONTEXT
 }
 
 private class InitialResultSerializer(val parent: Serializer<Any?>): Serializer<Any?>() {
-    override fun read(kryo: Kryo?, input: Input?, type: Class<Any?>?): Any? {
-        val readValue = parent.read(kryo, input, type)
+    override fun read(kryo: Kryo, input: Input, type: Class<Any?>): Any? {
+        val readValue = kryo.readClassAndObject(input)
         return when (readValue) {
-            ContinuationValues.COROUTINE_SUSPENDED -> COROUTINE_SUSPENDED
-            ContinuationValues.RESUMED -> _Resumed
-            ContinuationValues.UNDECIDED -> _Undecided
+            KryoAndroidConstants.COROUTINE_SUSPENDED -> COROUTINE_SUSPENDED
+            KryoAndroidConstants.RESUMED -> _Resumed
+            KryoAndroidConstants.UNDECIDED -> _Undecided
             else -> readValue
         }
     }
 
-    override fun write(kryo: Kryo?, output: Output?, obj: Any?) {
-        val toWrite = when (obj) {
-            COROUTINE_SUSPENDED -> ContinuationValues.COROUTINE_SUSPENDED
-            _Resumed -> ContinuationValues.RESUMED
-            _Undecided -> ContinuationValues.UNDECIDED
-            else -> obj
+    override fun write(kryo: Kryo, output: Output, obj: Any?) {
+        when (obj) {
+            COROUTINE_SUSPENDED -> kryo.writeClassAndObject(output, KryoAndroidConstants.COROUTINE_SUSPENDED)
+            _Resumed -> kryo.writeClassAndObject(output, KryoAndroidConstants.RESUMED)
+            _Undecided -> kryo.writeClassAndObject(output, KryoAndroidConstants.UNDECIDED)
+            else -> parent.write(kryo, output, obj)
         }
-        parent.write(kryo, output, toWrite)
     }
 
     override fun isImmutable(): Boolean = parent.isImmutable()
@@ -222,42 +222,53 @@ private class InitialResultSerializer(val parent: Serializer<Any?>): Serializer<
 
 private val _SafeContinuation = Class.forName("kotlin.coroutines.experimental.SafeContinuation")
 private val _DispatchedContinuation = Class.forName("kotlinx.coroutines.experimental.DispatchedContinuation")
-private val _CoroutineImpl = Class.forName("kotlin.coroutines.experimental.jvm.internal.CoroutineImpl")
 private val _Resumed = _SafeContinuation.getDeclaredField("RESUMED").let { f -> f.isAccessible=true; f.get(null) }
 private val _Undecided = _SafeContinuation.getDeclaredField("UNDECIDED").let { f -> f.isAccessible=true; f.get(null) }
 
+private class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo, _SafeContinuation) {
 
-class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Continuation<Any>>(kryo, _SafeContinuation) {
-    override fun initializeCachedFields() {
-        getField("result").serializer = InitialResultSerializer(kryo.getDefaultSerializer(Any::class.java))
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun read(kryo: Kryo, input: Input, type: Class<Continuation<Any>>?): Continuation<Any> {
-        val delegate = kryo.readClassAndObject(input)
-        val initialResult = getField("result").serializer.read(kryo, input, Any::class.java)
-        val obj = _SafeContinuation.constructors.first { it.parameterTypes.size == 2  && it.parameterTypes[0] == Continuation::class.java }.newInstance(delegate, initialResult)
-
-        kryo.reference(obj)
-        return obj as Continuation<Any>
-    }
-}
-
-class DispatchedContinuationSerializer(kryo: Kryo): FieldSerializer<Continuation<Any>>(kryo, _DispatchedContinuation) {
-
-    @Suppress("UNCHECKED_CAST")
-    override fun read(kryo: Kryo, input: Input, type: Class<Continuation<Any>>?): Continuation<Any> {
-        val dispatcher = kryo.readClassAndObject(input)
-        val continuation = kryo.readClassAndObject(input)
-        val obj = _SafeContinuation.constructors.first().newInstance(dispatcher, continuation)
-        kryo.reference(obj)
-        return obj as Continuation<Any>
-    }
-}
-
-class CoroutineSerializer(kryo: Kryo): FieldSerializer<Any>(kryo, _CoroutineImpl) {
-    override fun write(kryo: Kryo?, output: Output?, obj: Any?) {
+    override fun write(kryo: Kryo, output: Output, obj: Any?) {
+        val resultField = getField("result").field.apply { isAccessible=true }
+        val resultValue = resultField.get(obj)
+        var changed = true
+        // If the result field is one of the special objects, map them to the enum instances for
+        // safe serialization
+        when (resultValue) {
+            COROUTINE_SUSPENDED -> resultField.set(obj, KryoAndroidConstants.COROUTINE_SUSPENDED)
+            _Resumed -> resultField.set(obj, KryoAndroidConstants.RESUMED)
+            _Undecided -> resultField.set(obj, KryoAndroidConstants.UNDECIDED)
+            else -> changed = false
+        }
         super.write(kryo, output, obj)
+        // Undo the changes
+        if (changed) {
+            resultField.set(obj, resultValue)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun read(kryo: Kryo, input: Input, type: Class<Any>): Any? {
+        val obj = super.read(kryo, input, type)
+        val resultField = getField("result").field.apply { isAccessible=true }
+        val resultValue = resultField.get(obj)
+        when (resultValue) {
+            KryoAndroidConstants.COROUTINE_SUSPENDED -> resultField.set(obj, COROUTINE_SUSPENDED)
+            KryoAndroidConstants.RESUMED -> resultField.set(obj, _Resumed)
+            KryoAndroidConstants.UNDECIDED -> resultField.set(obj, _Undecided)
+        }
+
+        return obj
+    }
+}
+
+/*
+open class DataSerializer(kryo: Kryo, type: Class<*>): FieldSerializer<Any>(kryo, type/*, null, FieldSerializerConfig().apply { isIgnoreSyntheticFields=true }*/) {
+    override fun write(kryo: Kryo, output: Output, obj: Any?) {
+        super.write(kryo, output, obj)
+    }
+
+    override fun create(kryo: Kryo, input: Input, type: Class<Any>): Any {
+        return allocate(type)
     }
 
     override fun read(kryo: Kryo, input: Input, type: Class<Any>): Any {
@@ -273,28 +284,96 @@ class CoroutineSerializer(kryo: Kryo): FieldSerializer<Any>(kryo, _CoroutineImpl
             else -> kryo.readClassAndObject(input)
 
         }}
-        return type.constructors.first().newInstance(params.toTypedArray())
+        try {
+            return type.declaredConstructors.first().apply { isAccessible=true }.newInstance(*params.toTypedArray())
+        } catch (e: Exception) {
+            val message = buildString {
+                append("Error creating ").append(type.name).append(": ").appendln(e.message)
+                for(f in fields) {
+                    val fld = f.field
+                    append("  field: ").append(fld.declaringClass.name).append('#').append(fld.name).append(": ").appendln(fld.type.name)
+                }
+                type.declaredConstructors.first().parameterTypes.joinTo(this, prefix = "  <init>(", postfix = ")") { it.name }
+            }
+            throw IllegalArgumentException(message, e)
+        }
+    }
+
+    companion object {
+        val unsafe = Class.forName("sun.misc.Unsafe").getMethod("getUnsafe").invoke(null)
+        private val allocateInstance = unsafe::class.java.getDeclaredMethod("allocateInstance", Class::class.java)
+        inline fun <reified T> allocate() = allocate(T::class.java)
+        @Suppress("UNCHECKED_CAST")
+        fun <T> allocate(t:Class<T>)  =  allocateInstance.invoke(unsafe, t) as T
+    }
+}
+*/
+
+private class StandaloneCoroutineSerializer(kryo: Kryo, type: Class<*>): FieldSerializer<Any>(kryo, type) {
+    val _parentContext: CachedField<*> = fields.first { it.field.declaringClass==type && it.field.name=="parentContext" }.also { removeField(it) }
+
+    override fun create(kryo: Kryo, input: Input, type: Class<Any>): Any {
+        val parentContext = kryo.readClassAndObject(input)
+        return type.constructors.first().apply { isAccessible=true }.newInstance(parentContext, true)
+    }
+
+    override fun write(kryo: Kryo, output: Output, obj: Any) {
+        _parentContext.write(output, obj)
+
+        super.write(kryo, output, obj)
     }
 }
 
-val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceResolver()).apply { registerAndroidSerializers(null) }
+private class ObjectSerializer(kryo: Kryo, val type: Class<*>): Serializer<Any>(true, true) {
+    override fun read(kryo: Kryo, input: Input, type: Class<Any>): Any {
+        return type.fields.first { it.name=="INSTANCE" }.get(null)
+    }
 
-fun kryoAndroid(context: Context): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers(context) }
-
-fun Kryo.registerAndroidSerializers(context: Context?) {
-    register(_SafeContinuation, SafeContinuationSerializer(this))
-    register(_DispatchedContinuation, DispatchedContinuationSerializer(this))
-    if (context!=null) register(Context::class.java, ContextSerializer(context))
-    register(_CoroutineImpl, CoroutineSerializer(this))
+    override fun write(kryo: Kryo, output: Output, obj: Any?) {
+//        kryo.writeClass(output, type)
+    }
 }
 
-class AndroidKotlinResolver(context: Context?) : DefaultClassResolver() {
+private class CoroutineImplSerializer(kryo: Kryo, type: Class<*>): FieldSerializer<Any>(kryo, type, null, FieldSerializerConfig().apply { isIgnoreSyntheticFields=false }) {
+    override fun write(kryo: Kryo, output: Output, obj: Any?) {
+        super.write(kryo, output, obj)
+    }
+
+    override fun read(kryo: Kryo, input: Input, type: Class<Any>): Any {
+        return super.read(kryo, input, type)
+    }
+}
+
+
+val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceResolver()).apply { registerAndroidSerializers() }
+
+fun kryoAndroid(context: Context): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers() }
+
+fun Kryo.registerAndroidSerializers() {
+    instantiatorStrategy = Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy())
+
+    register(_SafeContinuation, SafeContinuationSerializer(this))
+    register(CommonPool::class.java, ObjectSerializer(this, CommonPool::class.java))
+}
+
+class AndroidKotlinResolver(private val context: Context?) : DefaultClassResolver() {
 
     override fun getRegistration(type: Class<*>): Registration? {
         return when {
-            Context::class.java.isAssignableFrom(type) -> getRegistration(Context::class.java)
-            type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" -> super.getRegistration(type.superclass)
+            type.isPrimitive || type==Any::class.java || type.superclass==null -> super.getRegistration(type)
+            Context::class.java.isAssignableFrom(type.superclass) -> super.getRegistration(type) ?: run {
+                register(Registration(type, ContextSerializer(context), -1))
+            }
+            type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" -> {
+                super.getRegistration(type)?:run {
+                    register(Registration(type, CoroutineImplSerializer(kryo, type), -1))
+                }
+            }
             else -> super.getRegistration(type)
         }
+    }
+
+    companion object {
+        const val TAG = "AndroidKotlinResolver"
     }
 }
