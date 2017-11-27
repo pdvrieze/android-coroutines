@@ -11,6 +11,7 @@ import android.os.Parcelable
 import android.support.annotation.RequiresApi
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
+import kotlinx.coroutines.experimental.CancellableContinuation
 import nl.adaptivity.android.kotlin.bundle
 import nl.adaptivity.android.kotlin.set
 import nl.adaptivity.android.kryo.kryoAndroid
@@ -24,7 +25,7 @@ import kotlin.coroutines.experimental.suspendCoroutine
 fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
     // Horrible hack to fix generics
     @Suppress("UNCHECKED_CAST")
-    val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
+    val contFragment = RetainedContinuationFragment(ParcelableContinuation(body, COROUTINEFRAGMENT_RESULTCODE_START))
     fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
     runOnUiThread {
         fragmentManager.executePendingTransactions()
@@ -32,10 +33,10 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<
     }
 }
 
-suspend fun Activity.activityResult(intent:Intent):ActivityResult {
+suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     return suspendCoroutine { continuation ->
         val fm = fragmentManager
-        val contFragment = RetainedContinuationFragment(ParcelableContinuation<Activity, ActivityResult>(COROUTINEFRAGMENT_RESULTCODE_START, continuation))
+        val contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, COROUTINEFRAGMENT_RESULTCODE_START))
 
         fm.beginTransaction().apply {
             // This shouldn't happen, but in that case remove the old continuation.
@@ -58,7 +59,7 @@ suspend fun Activity.activityResult(intent:Intent):ActivityResult {
 fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
     // Horrible hack to fix generics
     @Suppress("UNCHECKED_CAST")
-    val contFragment = RetainedContinuationFragment(ParcelableContinuation(COROUTINEFRAGMENT_RESULTCODE_START, body) as ParcelableContinuation<Activity, ActivityResult>)
+    val contFragment = RetainedContinuationFragment(ParcelableContinuation(body, COROUTINEFRAGMENT_RESULTCODE_START))
     fragmentManager.beginTransaction().add(contFragment,RetainedContinuationFragment.TAG).commit()
     runOnUiThread {
         fragmentManager.executePendingTransactions()
@@ -72,11 +73,14 @@ const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
 
 typealias SerializableHandler<A,T> = A.(T) -> Unit
 
-private class ParcelableContinuation<A:Activity, T> private constructor(val requestCode: Int, var handlerOrContinuation: Any): Parcelable {
+fun <A:Activity, T> ParcelableContinuation(handler: SerializableHandler<A,T>, requestCode: Int = -1)
+        = ParcelableContinuationCompat(handler, requestCode)
 
-    constructor(requestCode: Int, handler: SerializableHandler<A, T>): this(requestCode, handlerOrContinuation = handler)
+class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCode: Int, handlerOrContinuation: Any): ParcelableContinuation<T>(requestCode, handlerOrContinuation) {
 
-    constructor(requestCode: Int, handler: Continuation<T>): this(requestCode, handlerOrContinuation = handler)
+    constructor(handler: SerializableHandler<A, T>, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
+
+    constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
 
 
     @Suppress("UNCHECKED_CAST")
@@ -85,10 +89,63 @@ private class ParcelableContinuation<A:Activity, T> private constructor(val requ
         Log.d(TAG, "Read continuation from parcel")
     }
 
+    private fun resolve(context:Context): Any {
+        val h = continuation
+        return when (h) {
+            is ByteArray -> kryoAndroid(context).readClassAndObject(Input(h)).also { continuation = it }
+            else -> h
+        }
+    }
+
+    override fun resume(context: Context, value: T) {
+        val h = resolve(context)
+        when (h) {
+            is Continuation<*> -> (h as Continuation<T>).resume(value)
+            is Function<*> -> (h as SerializableHandler<Context, T>).invoke(context, value)
+            else -> throw IllegalStateException("Invalid continuation: ${h::class.java.name}")
+        }
+    }
+
+    override fun resumeWithException(context: Context, exception: Exception) {
+        val h = resolve(context)
+        when (h) {
+            is Continuation<*> -> h.resumeWithException(exception)
+            is Function<*> -> (h as SerializableHandler<Context, T?>).invoke(context, null)
+            else -> throw IllegalStateException("Invalid continuation: ${h::class.java.name}")
+        }
+    }
+
+    override fun describeContents() = 0
+
+    companion object CREATOR : Parcelable.Creator<ParcelableContinuationCompat<Activity, Any?>> {
+        override fun createFromParcel(parcel: Parcel): ParcelableContinuationCompat<Activity, Any?> {
+            return ParcelableContinuationCompat(parcel)
+        }
+
+        override fun newArray(size: Int): Array<ParcelableContinuationCompat<Activity, Any?>?> {
+            return arrayOfNulls(size)
+        }
+
+        @JvmStatic
+        val TAG = ParcelableContinuationCompat::class.java.simpleName
+    }
+}
+
+open class ParcelableContinuation<T> protected constructor(val requestCode: Int, protected var continuation: Any): Parcelable {
+
+    constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handler)
+
+
+    @Suppress("UNCHECKED_CAST")
+    constructor(parcel: Parcel) :
+            this(parcel.readInt(), continuation = ByteArray(parcel.readInt()).also { parcel.readByteArray(it) } ) {
+        Log.d(TAG, "Read continuation from parcel")
+    }
+
     override fun writeToParcel(dest: Parcel, flags: Int) {
         Log.d(TAG, "Writing continuation to parcel")
         dest.writeInt(requestCode)
-        val h = handlerOrContinuation
+        val h = continuation
         if (h is ByteArray) {
             dest.unmarshall(h, 0, h.size)
         } else {
@@ -96,22 +153,39 @@ private class ParcelableContinuation<A:Activity, T> private constructor(val requ
         }
     }
 
-    fun resolve(context:Context): Any {
-        val h = handlerOrContinuation
+    open fun cancel(context: Context) {
+        val continuation = resolve(context)
+        if (continuation is CancellableContinuation) {
+            continuation.cancel()
+        } else {
+            (continuation as Continuation<T?>).resume(null)
+        }
+    }
+
+    open fun resume(context: Context, value: T) {
+        resolve(context).resume(value)
+    }
+
+    open fun resumeWithException(context: Context, exception: Exception) {
+        resolve(context).resumeWithException(exception)
+    }
+
+    private fun resolve(context:Context): Continuation<T> {
+        val h = continuation
         return when (h) {
-            is ByteArray -> kryoAndroid(context).readClassAndObject(Input(h))
-            else -> h
+            is ByteArray -> (kryoAndroid(context).readClassAndObject(Input(h)) as Continuation<T>).also { continuation = it }
+            else -> h as Continuation<T>
         }
     }
 
     override fun describeContents() = 0
 
-    companion object CREATOR : Parcelable.Creator<ParcelableContinuation<Activity, Any?>> {
-        override fun createFromParcel(parcel: Parcel): ParcelableContinuation<Activity, Any?> {
+    companion object CREATOR : Parcelable.Creator<ParcelableContinuation<Any?>> {
+        override fun createFromParcel(parcel: Parcel): ParcelableContinuation<Any?> {
             return ParcelableContinuation(parcel)
         }
 
-        override fun newArray(size: Int): Array<ParcelableContinuation<Activity, Any?>?> {
+        override fun newArray(size: Int): Array<ParcelableContinuation<Any?>?> {
             return arrayOfNulls(size)
         }
 
@@ -120,53 +194,63 @@ private class ParcelableContinuation<A:Activity, T> private constructor(val requ
     }
 }
 
-sealed class ActivityResult {
-    object Cancelled: ActivityResult() {
-        override fun <R> map(function: (Intent?) -> R) = null
+typealias ActivityResult = Maybe<Intent?>
+
+sealed class Maybe<out T> {
+
+    data class Error(val e: Exception): Maybe<Nothing>() {
+        override fun <R> flatMap(function: (Nothing) -> R): Nothing {
+            throw e
+        }
     }
 
-    data class Ok(val data: Intent?): ActivityResult() {
-        override fun <R> map(function: (Intent?) -> R): R = function(data)
+    object Cancelled: Maybe<Nothing>() {
+        override fun <R> flatMap(function: (Nothing) -> R) = null
     }
 
-    abstract fun <R> map(function: (Intent?) -> R): R?
+    data class Ok<T>(val data: T): Maybe<T>() {
+        override fun <R> flatMap(function: (T) -> R): R = function(data)
+    }
 
+    abstract fun <R> flatMap(function: (T) -> R): R?
+
+    inline fun <R> onError(function: (Exception) -> R):R? = if (this is Error) function(e) else null
     inline fun <R> onCancelled(function: () -> R):R? = if (this is Cancelled) function() else null
-    inline fun <R> onOk(function: (Intent?) -> R):R? = if (this is Ok) function(data) else null
+    inline fun <R> onOk(function: (T) -> R):R? = if (this is Ok) function(data) else null
+
+    companion object {
+        inline fun <T> error(e: Exception): Maybe<T> = Error(e) as Maybe<T>
+
+        inline fun <T> cancelled(): Maybe<T> = Cancelled as Maybe<T>
+    }
 }
 
-private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Activity, ActivityResult>) = RetainedContinuationFragment().also {
+private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Maybe<Intent?>>) = RetainedContinuationFragment().also {
     it.arguments = bundle(1) { it[KEY_ACTIVITY_CONTINUATION]= activityContinuation }
 }
 
 class RetainedContinuationFragment : Fragment() {
-    private var activityContinuation: ParcelableContinuation<Activity, ActivityResult>? = null
+    private var activityContinuation: ParcelableContinuation<ActivityResult>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         retainInstance = true
-        arguments?.getParcelable<ParcelableContinuation<Activity, ActivityResult>>(KEY_ACTIVITY_CONTINUATION)?.let { activityContinuation = it }
+        arguments?.getParcelable<ParcelableContinuation<ActivityResult>>(KEY_ACTIVITY_CONTINUATION)?.let { activityContinuation = it }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("UNCHECKED_CAST")
-        fun dispatchResult(cont: ParcelableContinuation<Activity, ActivityResult>, activityResult: ActivityResult) {
-            val handler = cont.resolve(activity)
+        fun dispatchResult(cont: ParcelableContinuation<ActivityResult>, activityResult: ActivityResult) {
+            cont.resume(activity, activityResult)
             activityContinuation = null
-            when (handler) {
-                is Continuation<*> -> (handler as Continuation<ActivityResult>).resume(activityResult)
-                is Function2<*,*,*> -> (handler as Activity.(ActivityResult) -> Unit).invoke(activity, activityResult)
-                else -> throw IllegalStateException("Should be unreachable, handler is: ${handler.javaClass.canonicalName}")
-            }
-
         }
 
         val cont = activityContinuation
         when {
             cont == null  ||
                     requestCode != cont.requestCode -> super.onActivityResult(requestCode, resultCode, data)
-            resultCode == Activity.RESULT_OK -> dispatchResult(cont, ActivityResult.Ok(data))
-            resultCode == Activity.RESULT_CANCELED -> dispatchResult(cont, ActivityResult.Cancelled)
+            resultCode == Activity.RESULT_OK -> dispatchResult(cont, Maybe.Ok(data))
+            resultCode == Activity.RESULT_CANCELED -> dispatchResult(cont, Maybe.cancelled())
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
         // Remove this fragment, it's no longer needed

@@ -40,34 +40,6 @@ class SuspDownloadDialog : SuspendableDialog<Boolean>(), DialogInterface.OnClick
     private var downloaded: File? = null
     private var requestCode = INSTALL_ACTIVITY_REQUEST
 
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.isActionDownloadComplete) {
-                if (intent.downloadId == downloadReference) {
-                    context.unregisterReceiver(this)
-                    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                    val query = Query()
-                    query.setFilterById(downloadReference)
-                    downloadManager.query(query).use { data ->
-                        if (data.moveToNext()) {
-
-                            if (data.getInt(DownloadManager.COLUMN_STATUS) == DownloadManager.STATUS_SUCCESSFUL) {
-
-                                downloaded = File(data.getUri(DownloadManager.COLUMN_LOCAL_URI))
-
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                    doInstall(context, FileProvider.getUriForFile(context, "${context.applicationInfo.packageName}.fileProvider", downloaded))
-                                } else {
-                                    doInstall(context, Uri.fromFile(downloaded))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -102,52 +74,6 @@ class SuspDownloadDialog : SuspendableDialog<Boolean>(), DialogInterface.OnClick
             super.dispatchResult(false)
             dialog.cancel()
         }
-    }
-
-    private fun doDownload() {
-        val downloadManager = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        if (downloadReference >= 0) {
-            val query = Query()
-            query.setFilterById(downloadReference)
-            val data = downloadManager.query(query)
-            if (data.moveToNext()) {
-                val status = data.getInt(data.getColumnIndex(DownloadManager.COLUMN_STATUS))
-                if (status == DownloadManager.STATUS_FAILED) {
-                    downloadReference = -1
-                } else {// do something better
-                    Toast.makeText(activity, "Download already in progress", Toast.LENGTH_SHORT).show()
-                }
-
-            } else {
-                downloadReference = -1
-            }
-        }
-        val request = Request(Uri.parse(AUTHENTICATOR_URL)).apply {
-            setDescription("darwin-auth.apk")
-            setTitle(getString(R.string.download_title))
-        }
-        val cacheDir = activity.externalCacheDir
-        val apkName = File(cacheDir, "darwin-auth.apk")
-        if (apkName.exists()) {
-            apkName.delete()
-        }
-
-        request.setDestinationUri(Uri.fromFile(apkName))
-        downloadReference = downloadManager.enqueue(request)
-        activity.registerReceiver(broadcastReceiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
-    }
-
-    private fun doInstall(context: Context, uri: Uri) {
-        //    file.setReadable(true, false);
-        val installIntent = Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-        installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        if (context is Activity) {
-            context.startActivityForResult(installIntent, requestCode)
-        } else {
-            context.startActivity(installIntent)
-        }
-        dismiss()
     }
 
     companion object {

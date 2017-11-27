@@ -11,13 +11,10 @@ import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
-import nl.adaptivity.android.coroutines.ActivityResult
+import nl.adaptivity.android.coroutines.Maybe
 import nl.adaptivity.android.coroutines.withActivityResult
-import nl.adaptivity.android.darwin.AuthenticatedWebClientFactory
 import nl.adaptivity.android.kotlin.getValue
 import nl.adaptivity.android.kotlin.weakRef
-import java.net.URI
-import kotlin.coroutines.experimental.Continuation
 
 val Intent.accountName get() = getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 val Intent.accountType get() = getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
@@ -40,8 +37,8 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
                     val intent = resultBundle.intent
                     activity?.withActivityResult(intent) { activityResult ->
                         when (activityResult) {
-                            is ActivityResult.Cancelled -> cont.cancel()
-                            is ActivityResult.Ok -> cont.resume(runBlocking { getAuthToken(activity, account, authTokenType, options) })
+                            is Maybe.Cancelled -> cont.cancel()
+                            is Maybe.Ok -> cont.resume(runBlocking { getAuthToken(activity, account, authTokenType, options) })
                         }
                     }
                     return@AccountManagerCallback

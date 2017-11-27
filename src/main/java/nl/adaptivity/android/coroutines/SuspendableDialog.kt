@@ -1,8 +1,8 @@
 package nl.adaptivity.android.coroutines
 
 import android.app.Activity
+import android.app.DialogFragment
 import android.content.DialogInterface
-import android.support.v4.app.DialogFragment
 import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
@@ -13,7 +13,8 @@ open class SuspendableDialog<T>: DialogFragment() {
 
     private var callback: CancellableContinuation<DialogResult<T>>? = null
 
-    suspend fun show(activity: Activity, requestCode: Int) : DialogResult<T> {
+    suspend fun show(activity: Activity, tag: String) : DialogResult<T> {
+        super.show(activity.fragmentManager, tag)
         val d = this
         return suspendCancellableCoroutine<DialogResult<T>> { cont ->
             callback?.cancel()
@@ -49,10 +50,16 @@ open class SuspendableDialog<T>: DialogFragment() {
  * Class representing the result of a dialog
  */
 sealed class DialogResult<T> {
-    private object Cancelled: DialogResult<Any>()
+    private object Cancelled: DialogResult<Any>() {
+        override fun flatMap() = null
+    }
 
     @Suppress("UNCHECKED_CAST")
     fun <T> Cancelled(): DialogResult<T> = Cancelled as DialogResult<T>
 
-    data class Success<T>(val value: T): DialogResult<T>()
+    data class Success<T>(val value: T): DialogResult<T>() {
+        override fun flatMap() = value
+    }
+
+    abstract fun flatMap(): T?
 }

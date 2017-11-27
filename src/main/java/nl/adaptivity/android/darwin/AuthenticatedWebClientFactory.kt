@@ -11,21 +11,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.annotation.RequiresPermission
 import android.support.annotation.WorkerThread
 import android.support.v4.content.ContextCompat
+import android.support.v4.content.FileProvider
 import android.util.Log
-import kotlinx.coroutines.experimental.CancellationException
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.experimental.*
 import nl.adaptivity.android.accountmanager.accountName
 import nl.adaptivity.android.accountmanager.accountType
 import nl.adaptivity.android.accountmanager.hasFeatures
+import nl.adaptivity.android.coroutines.ActivityResult
+import nl.adaptivity.android.coroutines.Maybe
 import nl.adaptivity.android.coroutines.DialogResult
+import nl.adaptivity.android.coroutines.activityResult
 import nl.adaptivity.android.darwinlib.R
+import java.io.File
 import java.io.IOException
 import java.net.URI
 
@@ -204,19 +208,19 @@ object AuthenticatedWebClientFactory {
     suspend fun ensureAuthenticator(context: AuthenticationContext): Boolean {
         if (hasAuthenticator(context.context)) return true
         val dialog = SuspDownloadDialog.newInstance(context.downloadRequestCode)
-        return dialog.show(context.activity, context.downloadRequestCode) is DialogResult.Success
+        return dialog.show(context.activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG) is DialogResult.Success<*>
     }
 
-    suspend fun ensureAccount(context: AuthenticationContext, authBase: URI?) : Account? {
+    suspend fun ensureAccount(context: AuthenticationContext, authBase: URI?) : Maybe<Account> {
         // If we have a stored, valid, account, just return it
         getStoredAccount(context.context)?.let { account ->
             if (isAccountValid(context.context, account, authBase)) {
-                return account
+                return Maybe.Ok(account)
             } else { // Not valid, forget the account
                 setStoredAccount(context.context, null)
             }
         }
-        if (!ensureAuthenticator(context)) return null
+        if (!ensureAuthenticator(context)) return Maybe.cancelled()
         TODO("Rest still needed")
     }
 
@@ -242,10 +246,40 @@ object AuthenticatedWebClientFactory {
         return null
     }
 
+    fun showDownloadDialog(activity: Activity) {
+        async {
+            if (SuspDownloadDialog.newInstance(-1).show(activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG).flatMap() != true) {
+                return@async
+            }
+            val downloadedApk = DownloadFragment.download(activity, Uri.parse(AUTHENTICATOR_URL))?: return@async
+
+            val downloaded = File(downloadedApk)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                doInstall(activity, FileProvider.getUriForFile(activity, "${activity.applicationInfo.packageName}.darwinlib.fileProvider", downloaded))
+            } else {
+                doInstall(activity, Uri.fromFile(downloaded))
+            }
+        }
+    }
+
+    suspend fun doInstall(activity: Activity, uri: Uri): ActivityResult {
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        return activity.activityResult(installIntent)
+    }
+
+
+
     @JvmStatic
     fun doShowDownloadDialog(activity: Activity, requestCode: Int) {
-        val dialog = DownloadDialog.newInstance(requestCode)
-        dialog.show(activity.fragmentManager, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG)
+        launch {
+            showDownloadDialog(activity)
+        }
+//        val dialog = DownloadDialog.newInstance(requestCode)
+//        dialog.show(activity.fragmentManager, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG)
     }
 
 
@@ -282,3 +316,5 @@ suspend fun AccountManager.isAccountValid(account: Account?, authBase: URI?): Bo
         return false
     }
 }
+
+internal const val AUTHENTICATOR_URL = "https://darwin.bournemouth.ac.uk/darwin-auth.apk"

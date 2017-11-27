@@ -166,7 +166,6 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
 
     companion object {
 
-        const val AUTHENTICATOR_URL = "https://darwin.bournemouth.ac.uk/darwin-auth.apk"
         private const val INSTALL_ACTIVITY_REQUEST = 1234
         const val KEY_REQUEST_CODE = "requestcode"
 
