@@ -147,9 +147,20 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
         dest.writeInt(requestCode)
         val h = continuation
         if (h is ByteArray) {
-            dest.unmarshall(h, 0, h.size)
+            try {
+                dest.writeInt(h.size)
+                dest.writeByteArray(h)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error writing bytearray of previous continuation: ${e.message}", e)
+                throw e
+            }
         } else {
-            dest.writeKryoObject(h, kryoAndroid)
+            try {
+                dest.writeKryoObject(h, kryoAndroid)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error writing continuation: ${e.message}", e)
+                throw e
+            }
         }
     }
 
