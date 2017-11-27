@@ -16,12 +16,7 @@
 
 package nl.adaptivity.android.darwin
 
-import android.accounts.Account
-import android.accounts.AccountManager
-import android.accounts.AccountManagerCallback
-import android.accounts.AccountManagerFuture
-import android.accounts.AuthenticatorException
-import android.accounts.OperationCanceledException
+import android.accounts.*
 import android.annotation.TargetApi
 import android.app.Activity
 import android.app.NotificationChannel
@@ -38,17 +33,9 @@ import android.util.Log
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.launch
 import nl.adaptivity.android.accountmanager.getAuthToken
-
-import java.io.IOException
-import java.net.CookieHandler
-import java.net.CookieManager
-import java.net.CookiePolicy
-import java.net.CookieStore
-import java.net.HttpCookie
-import java.net.HttpURLConnection
-import java.net.URI
-
 import nl.adaptivity.android.darwinlib.R
+import java.io.IOException
+import java.net.*
 
 
 /**
@@ -71,13 +58,63 @@ internal class AuthenticatedWebClientV14(override val account: Account, override
         return execute(context, request, false)
     }
 
+    suspend fun execute(activity: Activity, request: AuthenticatedWebClient.WebRequest): HttpURLConnection? {
+        val am = AccountManager.get(activity)
+        val token = am.getAuthToken(activity, account, AuthenticatedWebClient.ACCOUNT_TOKEN_TYPE)
+        if (token!=null) {
+            val cookieUri = request.uri
+            val cookieStore = cookieManager.cookieStore
+
+            for(repeat in 0..1) {
+                val cookie = HttpCookie(AuthenticatedWebClient.DARWIN_AUTH_COOKIE, token)
+
+                if ("https" == request.uri.scheme.toLowerCase()) {
+                    cookie.secure = true
+                }
+                removeConflictingCookies(cookieStore, cookie)
+                cookieStore.add(cookieUri, cookie)
+                request.setHeader(AuthenticatedWebClient.DARWIN_AUTH_COOKIE, token)
+
+                val connection = request.connection
+                when {
+                    connection.responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && repeat==0 -> {
+                        try {
+                            connection.errorStream.use { errorStream ->
+                                errorStream.skip(Integer.MAX_VALUE.toLong())
+                            }
+                        } finally {
+                            connection.disconnect()
+                        }
+
+                        Log.d(TAG, "execute: Invalidating auth token")
+                        am.invalidateAuthToken(AuthenticatedWebClient.ACCOUNT_TYPE, token)
+                    }
+                    else -> return connection
+                }
+            }
+
+        }
+        return null
+    }
+
     //    @WorkerThread
-    override fun Activity.execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean, onError: (HttpURLConnection)->Unit, callback: (HttpURLConnection)->Unit): Job {
+    override fun Activity.execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean, onError: (HttpURLConnection?) -> Unit, callback: (HttpURLConnection)->Unit): Job {
+        return launch {
+            val connection = execute(this@execute, request)
+            when {
+                connection==null -> onError(null)
+                connection.responseCode in 200..399 -> callback(connection)
+                else -> onError(connection)
+            }
+
+        }
+
+/*
         val context = this.applicationContext
         return launch {
             val am = AccountManager.get(context)
 
-            val token = am.getAuthToken(activity = this@execute, account = account, authTokenType = AuthenticatedWebClient.ACCOUNT_TOKEN_TYPE, restart ={ execute(request, false, onError, callback) })
+            val token = am.getAuthToken(activity = this@execute, account = account, authTokenType = AuthenticatedWebClient.ACCOUNT_TOKEN_TYPE)
             if (token!=null) {
 
                 val cookieUri = request.uri
@@ -117,6 +154,7 @@ internal class AuthenticatedWebClientV14(override val account: Account, override
 
             }
         }
+*/
 
     }
 

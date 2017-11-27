@@ -11,25 +11,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.os.AsyncTask
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.annotation.RequiresPermission
-import android.support.annotation.UiThread
 import android.support.annotation.WorkerThread
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.runBlocking
 import nl.adaptivity.android.accountmanager.accountName
 import nl.adaptivity.android.accountmanager.accountType
+import nl.adaptivity.android.accountmanager.hasFeatures
 import nl.adaptivity.android.coroutines.DialogResult
-
+import nl.adaptivity.android.darwinlib.R
 import java.io.IOException
 import java.net.URI
-
-import nl.adaptivity.android.darwinlib.R
 
 /**
  * A class for creating authenticated web clients
@@ -39,33 +37,6 @@ object AuthenticatedWebClientFactory {
     private val TAG = "AuthWebClientFty"
 
     private val DEFAULT_AUTHBASE_ARRAY = arrayOf<String?>(null)
-
-    private class ShowAccountTask(context: Context, private val authBase: URI) : AsyncTask<AuthenticatedWebClientCallbacks, Void, Runnable>() {
-        /* Application context to avoid leaks. */
-        @SuppressLint("StaticFieldLeak")
-        private val context = context.applicationContext
-
-        override fun doInBackground(vararg params: AuthenticatedWebClientCallbacks): Runnable {
-            // TODO implement with coroutines
-            val callbacks = params[0]
-            val am = AccountManager.get(context)
-
-            if (!hasAuthenticator(am)) return Runnable { callbacks.showDownloadDialog() }
-
-            var currentAccount = getStoredAccount(context)
-
-            if (!isAccountValid(context, am, currentAccount, authBase)) {
-                currentAccount = null
-            }
-
-            val selectAccountIntent = selectAccount(context, currentAccount, authBase)
-            return Runnable { callbacks.startSelectAccountActivity(selectAccountIntent) }
-        }
-
-        override fun onPostExecute(runnable: Runnable) {
-            runnable.run()
-        }
-    }
 
     interface AuthenticatedWebClientCallbacks {
         /**
@@ -144,17 +115,17 @@ object AuthenticatedWebClientFactory {
 
             try {
                 result.result
-            } catch (e: IllegalArgumentException) {
-                return false
-            } catch (e: AuthenticatorException) {
-                Log.e(TAG, "Error logging in: ", e)
-                return false
-            } catch (e: IOException) {
-                Log.e(TAG, "Error logging in: ", e)
-                return false
-            } catch (e: OperationCanceledException) {
-                Log.e(TAG, "Error logging in: ", e)
-                return false
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException,
+                    is IOException,
+                    is OperationCanceledException,
+                    is AuthenticatorException -> {
+                        Log.e(TAG, "Error logging in: ", e)
+                        return false
+                    }
+                    else -> throw e
+                }
             }
 
             return true
@@ -165,22 +136,9 @@ object AuthenticatedWebClientFactory {
     @WorkerThread
     @JvmStatic
     fun isAccountValid(am: AccountManager, account: Account?, authBase: URI?): Boolean {
-        if (account == null) return false
-
-        try {
-            val future = am.hasFeatures(account, accountFeatures(authBase), null, null)
-            return future.result
-        } catch (e: SecurityException) {
-            throw RuntimeException(e)
-        } catch (e: OperationCanceledException) {
-            throw RuntimeException(e)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        } catch (e: AuthenticatorException) {
-            return false
-        }
-
+        return runBlocking { am.isAccountValid(account, authBase) }
     }
+
 
     @JvmStatic
     fun hasAuthenticator(context: Context): Boolean {
@@ -284,14 +242,6 @@ object AuthenticatedWebClientFactory {
         return null
     }
 
-    @Suppress("unused")
-    @UiThread
-    @JvmStatic
-    fun showAccountSelection(activity: Activity, callbacks: AuthenticatedWebClientCallbacks, authBase: URI) {
-        ShowAccountTask(activity, authBase).execute(callbacks)
-        getStoredAccount(activity)
-    }
-
     @JvmStatic
     fun doShowDownloadDialog(activity: Activity, requestCode: Int) {
         val dialog = DownloadDialog.newInstance(requestCode)
@@ -320,4 +270,15 @@ object AuthenticatedWebClientFactory {
         return AuthenticatedWebClientV14(account, authBase)
     }
 
+}
+
+
+suspend fun AccountManager.isAccountValid(account: Account?, authBase: URI?): Boolean {
+    if (account == null) return false
+
+    try {
+        return hasFeatures(account, AuthenticatedWebClientFactory.accountFeatures(authBase))
+    } catch (e: AuthenticatorException) {
+        return false
+    }
 }

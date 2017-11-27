@@ -151,9 +151,11 @@ class DownloadDialog : DialogFragment(), DialogInterface.OnClickListener {
 
     private fun doInstall(context: Context, uri: Uri) {
         //    file.setReadable(true, false);
-        val installIntent = Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-        installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
         if (context is Activity) {
             context.startActivityForResult(installIntent, requestCode)
         } else {

@@ -229,7 +229,7 @@ interface AuthenticatedWebClient {
     fun execute(context: Context, request: WebRequest): HttpURLConnection?
 
     @Throws(IOException::class)
-    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection) -> Unit = {}, callback: (HttpURLConnection) -> Unit): Job
+    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection?) -> Unit = {}, callback: (HttpURLConnection) -> Unit): Job
 
     companion object {
 

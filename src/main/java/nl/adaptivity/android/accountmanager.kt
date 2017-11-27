@@ -7,18 +7,23 @@ import android.accounts.*
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import kotlinx.coroutines.experimental.CancellableContinuation
+import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 import nl.adaptivity.android.coroutines.ActivityResult
 import nl.adaptivity.android.coroutines.withActivityResult
+import nl.adaptivity.android.darwin.AuthenticatedWebClientFactory
 import nl.adaptivity.android.kotlin.getValue
 import nl.adaptivity.android.kotlin.weakRef
+import java.net.URI
+import kotlin.coroutines.experimental.Continuation
 
 val Intent.accountName get() = getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 val Intent.accountType get() = getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
 val Bundle.intent get() = get(AccountManager.KEY_INTENT) as Intent
 
-suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null, restart: A.() -> Unit): String? {
+suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null): String? {
     val activity: A? by activity.weakRef
     return suspendCancellableCoroutine<String?> { cont ->
         val callback = AccountManagerCallback<Bundle> { future: AccountManagerFuture<Bundle> ->
@@ -27,11 +32,8 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
             } else {
                 val resultBundle:Bundle = try {
                     future.result
-                } catch (e: OperationCanceledException) {
-                    cont.resume(null) // No token, return null
-                    return@AccountManagerCallback
                 } catch (e: Exception) { // on any other exception just fail
-                    cont.tryResumeWithException(e)
+                    if (e is OperationCanceledException) cont.resume(null) else cont.tryResumeWithException(e)
                     return@AccountManagerCallback
                 }
                 if (resultBundle.containsKey(AccountManager.KEY_INTENT)) {
@@ -39,7 +41,7 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
                     activity?.withActivityResult(intent) { activityResult ->
                         when (activityResult) {
                             is ActivityResult.Cancelled -> cont.cancel()
-                            is ActivityResult.Ok -> cont.resume(runBlocking { getAuthToken(activity, account, authTokenType, options, restart) })
+                            is ActivityResult.Ok -> cont.resume(runBlocking { getAuthToken(activity, account, authTokenType, options) })
                         }
                     }
                     return@AccountManagerCallback
@@ -53,4 +55,32 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
 
         TODO("implement")
     }
+}
+
+private class CoroutineAccountManagerCallback<T>(private val cont: CancellableContinuation<T>): AccountManagerCallback<T> {
+    override fun run(future: AccountManagerFuture<T>) {
+        try {
+            if (future.isCancelled) {
+                cont.cancel()
+            } else {
+                cont.resume(future.result)
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                cont.cancel(e)
+            } else {
+                cont.tryResumeWithException(e)
+            }
+        }
+    }
+}
+
+private suspend inline fun <R> AccountManager.callAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
+    return suspendCancellableCoroutine<R> { cont ->
+        operation(this@callAsync, CoroutineAccountManagerCallback(cont))
+    }
+}
+
+suspend fun AccountManager.hasFeatures(account: Account, features: Array<String?>):Boolean {
+    return callAsync { callback -> hasFeatures(account, features, callback, null) }
 }

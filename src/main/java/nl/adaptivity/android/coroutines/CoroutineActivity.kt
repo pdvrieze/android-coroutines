@@ -12,9 +12,7 @@ import android.support.annotation.RequiresApi
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
 import nl.adaptivity.android.kotlin.bundle
-import nl.adaptivity.android.kotlin.getValue
 import nl.adaptivity.android.kotlin.set
-import nl.adaptivity.android.kotlin.weakRef
 import nl.adaptivity.android.kryo.kryoAndroid
 import nl.adaptivity.android.kryo.writeKryoObject
 import kotlin.coroutines.experimental.Continuation
@@ -36,10 +34,21 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<
 
 suspend fun Activity.activityResult(intent:Intent):ActivityResult {
     return suspendCoroutine { continuation ->
+        val fm = fragmentManager
         val contFragment = RetainedContinuationFragment(ParcelableContinuation<Activity, ActivityResult>(COROUTINEFRAGMENT_RESULTCODE_START, continuation))
-        fragmentManager.beginTransaction().add(contFragment, RetainedContinuationFragment.TAG).commit()
+
+        fm.beginTransaction().apply {
+            // This shouldn't happen, but in that case remove the old continuation.
+            fm.findFragmentByTag(RetainedContinuationFragment.TAG)?.let { remove(it) }
+
+            add(contFragment, RetainedContinuationFragment.TAG)
+
+            commit()
+        }
+
+
         runOnUiThread {
-            fragmentManager.executePendingTransactions()
+            fm.executePendingTransactions()
             contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
         }
     }
@@ -160,6 +169,8 @@ class RetainedContinuationFragment : Fragment() {
             resultCode == Activity.RESULT_CANCELED -> dispatchResult(cont, ActivityResult.Cancelled)
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
+        // Remove this fragment, it's no longer needed
+        fragmentManager.beginTransaction().remove(this).commit()
 
     }
 
