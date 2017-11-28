@@ -276,30 +276,7 @@ object AuthenticatedWebClientFactory {
         return getStoredAccount(context) // Just return the stored account instead.
     }
 
-    /**
-     * Function that is called when the authenticator install intent returns. Instead of looking at
-     * the results, just check that the application is now installed.
-     * @param context The context to use
-     * @param resultCode The result code from the calling activity
-     * @param resultData The data linked to the activity call result.
-     *
-     * @return `true` if installed, `false` if not.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    @JvmStatic
-    fun handleInstallAuthenticatorActivityResult(context: Context, resultCode: Int, resultData: Intent?): Boolean {
-        val pm = context.packageManager
-        try {
-            pm.getPackageInfo("uk.ac.bournemouth.darwin.auth", 0)
-            // throws if the package is not installed
-            return true
-        } catch (e: PackageManager.NameNotFoundException) {
-            return false
-        }
-
-    }
-
-    suspend fun ensureAuthenticator(activity: Activity): Boolean {
+    private suspend fun ensureAuthenticator(activity: Activity): Boolean {
         if (hasAuthenticator(activity)) return true
         return tryDownloadAndInstallAuthenticator(activity) is Maybe.Ok
     }
@@ -314,49 +291,25 @@ object AuthenticatedWebClientFactory {
             }
         }
         if (!ensureAuthenticator(activity)) return Maybe.cancelled()
-        return activity.activityResult(selectAccount(activity, null, authBase)).map { it?.account?.also { setStoredAccount(activity, it) } }
+        val selectAccountIntent = selectAccount(activity, null, authBase)
+        return activity.activityResult(selectAccountIntent).map { it?.account?.also { setStoredAccount(activity, it) } }
     }
 
     @JvmStatic
-    fun tryEnsureAccount(context: Activity, authBase: URI?, callback: SerializableHandler<Activity, Maybe<Account?>>): Account? {
-        async(start = CoroutineStart.UNDISPATCHED) {
+    fun tryEnsureAccount(context: Activity, authBase: URI?, callback: SerializableHandler<Activity, Maybe<Account?>>): Job {
+        return launch(start = CoroutineStart.UNDISPATCHED) {
             callback(context, ensureAccount(context, authBase))
         }
-/*
-
-        run {
-            val account = getStoredAccount(context) // Get the stored account, if we have one check that it is valid
-            if (account != null) {
-                if (isAccountValid(context, account, authBase)) {
-                    return account
-                }
-                setStoredAccount(context, null)
-            }
-        }
-        if (!hasAuthenticator(context)) {
-            ensureCallbacks.showDownloadDialog()
-            return null
-        }
-        val selectAccount = selectAccount(context, null, authBase)
-        ensureCallbacks.startSelectAccountActivity(selectAccount)
-*/
-
-        return null
     }
 
     @JvmStatic
-    fun tryDownloadAndInstallAuthenticator(activity: Activity, handler: SerializableHandler<Activity, ActivityResult>) {
-        launch {
+    fun tryDownloadAndInstallAuthenticator(activity: Activity, handler: SerializableHandler<Activity, Maybe<Unit>>): Job {
+        return launch(start = CoroutineStart.UNDISPATCHED) {
             handler(activity, tryDownloadAndInstallAuthenticator(activity))
         }
     }
 
-    @JvmStatic
-    fun doShowDownloadDialog(activity: Activity, handler: SerializableHandler<Activity, ActivityResult>) {
-        return tryDownloadAndInstallAuthenticator(activity, handler)
-    }
-
-    suspend fun tryDownloadAndInstallAuthenticator(activity: Activity): ActivityResult {
+    suspend fun tryDownloadAndInstallAuthenticator(activity: Activity): Maybe<Unit> {
         if (SuspDownloadDialog.newInstance(-1).show(activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG).flatMap() != true) {
             activity.reportStatus(AUTHENTICATOR_DOWNLOAD_REJECTED)
             return Maybe.cancelled()
@@ -378,18 +331,16 @@ object AuthenticatedWebClientFactory {
 
 
 
-    suspend fun doInstall(activity: Activity, uri: Uri): ActivityResult {
+    suspend fun doInstall(activity: Activity, uri: Uri): Maybe<Unit> {
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        return activity.activityResult(installIntent).also {
-            when (it) {
-                is Maybe.Ok -> activity.reportStatus(AUTHENTICATOR_INSTALL_SUCCESS)
-                is Maybe.Cancelled -> activity.reportStatus(AUTHENTICATOR_INSTALL_CANCELLED)
-                is Maybe.Error -> activity.reportStatus(AUTHENTICATOR_INSTALL_ERROR, it.e)
-            }
-        }
+        activity.activityResult(installIntent).also { if (it is Maybe.Error) return it }
+
+        return if(hasAuthenticator(AccountManager.get(activity))) {
+            Maybe.Ok(Unit)
+        } else Maybe.cancelled()
     }
 
 
