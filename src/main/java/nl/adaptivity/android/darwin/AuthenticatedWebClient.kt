@@ -225,11 +225,24 @@ interface AuthenticatedWebClient {
         fun writeTo(stream: OutputStream)
     }
 
+    /**
+     * Execute the web request synchronously.
+     */
     @Throws(IOException::class)
     fun execute(context: Context, request: WebRequest): HttpURLConnection?
 
-    @Throws(IOException::class)
-    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection?) -> Unit = {}, callback: (HttpURLConnection) -> Unit): Job
+    /**
+     * Execute the web request. This will launch it's own worker thread so no need to worry. The
+     * onSuccess will be called on a working thread. The client is responsible for invoking the UI
+     * thread with results.
+     *
+     * @receiver The activity to use as context and to launch needed activities to provide permission.
+     * @param request The request to make
+     * @param currentlyInRetry Unused
+     * @param onError Called when the request fails for some reason
+     * @param onSuccess Called when the request was successful.
+     */
+    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection?) -> Unit = {}, onSuccess: (HttpURLConnection) -> Unit): Job
 
     companion object {
 

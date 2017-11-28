@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import kotlinx.coroutines.experimental.CancellationException
-import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 import nl.adaptivity.android.coroutines.Maybe
@@ -24,7 +23,9 @@ import java.net.URI
 import kotlin.coroutines.experimental.Continuation
 
 /**
- * Created by pdvrieze on 27/11/17.
+ * Fragment that encapsulates the state of downloading a file.
+ *
+ * TODO Actually handle the case where download completed when the activity is in the background.
  */
 class DownloadFragment(): Fragment() {
     var downloadReference = -1L
@@ -33,6 +34,12 @@ class DownloadFragment(): Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let { continuation = it.getParcelable(KEY_CONTINUATION) }
+        savedInstanceState?.apply { downloadReference = getLong(KEY_DOWNLOAD_REFERENCE, -1L) }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(KEY_DOWNLOAD_REFERENCE, downloadReference)
     }
 
     private val broadcastReceiver = object : BroadcastReceiver() {
@@ -62,7 +69,7 @@ class DownloadFragment(): Fragment() {
     }
 
 
-    private fun doDownload(activity: Activity, downloadUri: Uri, description: String = "darwin-auth.apk", title: String = getString(R.string.download_title)) {
+    private fun doDownload(activity: Activity, downloadUri: Uri, fileName: String, description: String = fileName, title: String = getString(R.string.download_title)) {
         val downloadManager = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         if (downloadReference >= 0) {
             val query = DownloadManager.Query()
@@ -85,18 +92,19 @@ class DownloadFragment(): Fragment() {
             setTitle(title)
         }
         val cacheDir = activity.externalCacheDir
-        val apkName = File(cacheDir, "darwin-auth.apk")
-        if (apkName.exists()) {
-            apkName.delete()
+        val downloadFile = File(cacheDir, fileName)
+        if (downloadFile.exists()) {
+            downloadFile.delete()
         }
 
-        request.setDestinationUri(Uri.fromFile(apkName))
+        request.setDestinationUri(Uri.fromFile(downloadFile))
         downloadReference = downloadManager.enqueue(request)
         activity.registerReceiver(broadcastReceiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
     }
 
     companion object {
-        private const val KEY_CONTINUATION ="_CONTINUATION_"
+        private const val KEY_DOWNLOAD_REFERENCE = "DOWNLOAD_REFERENCE"
+        private const val KEY_CONTINUATION = "_CONTINUATION_"
         private var fragNo = 0
 
         fun newInstance(continuation: Continuation<URI>): DownloadFragment {
@@ -114,7 +122,7 @@ class DownloadFragment(): Fragment() {
                 activity.fragmentManager.beginTransaction().add(frag, nextTag()).commit()
                 activity.runOnUiThread {
                     activity.fragmentManager.executePendingTransactions()
-                    frag.doDownload(activity, downloadUri)
+                    frag.doDownload(activity, downloadUri, fileName = "darwin-auth.apk")
                 }
             }
         }

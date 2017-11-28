@@ -1,12 +1,12 @@
 package nl.adaptivity.android.darwin
 
 import android.Manifest
-import android.accounts.Account
-import android.accounts.AccountManager
-import android.accounts.AuthenticatorException
-import android.accounts.OperationCanceledException
+import android.accounts.*
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -17,6 +17,8 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.annotation.RequiresPermission
 import android.support.annotation.WorkerThread
+import android.support.v4.app.NotificationCompat
+import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.util.Log
@@ -26,7 +28,11 @@ import nl.adaptivity.android.accountmanager.account
 import nl.adaptivity.android.accountmanager.accountName
 import nl.adaptivity.android.accountmanager.accountType
 import nl.adaptivity.android.accountmanager.hasFeatures
-import nl.adaptivity.android.coroutines.*
+import nl.adaptivity.android.coroutines.ActivityResult
+import nl.adaptivity.android.coroutines.Maybe
+import nl.adaptivity.android.coroutines.SerializableHandler
+import nl.adaptivity.android.coroutines.activityResult
+import nl.adaptivity.android.darwin.DarwinLibStatusEvents.*
 import nl.adaptivity.android.darwinlib.R
 import java.io.File
 import java.io.IOException
@@ -40,6 +46,24 @@ object AuthenticatedWebClientFactory {
     private val TAG = "AuthWebClientFty"
 
     private val DEFAULT_AUTHBASE_ARRAY = arrayOf<String?>(null)
+
+    @Suppress("ObjectPropertyName")
+    private var _notificationChannel: String? = null
+    private val Context.notificationChannel: String @SuppressLint("NewApi")
+    get() {
+        _notificationChannel?.let { return it }
+        val channelId = "AuthWebClient"
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O) {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (manager.getNotificationChannel(channelId)!=null) {
+                val channel = NotificationChannel(channelId, "Darwin Authentication", NotificationManager.IMPORTANCE_HIGH).apply {
+                    this.setShowBadge(true)
+                }
+                manager.createNotificationChannel(channel)
+            }
+        }
+        return channelId.also { _notificationChannel = it }
+    }
 
     interface AuthenticatedWebClientCallbacks {
         /**
@@ -66,8 +90,71 @@ object AuthenticatedWebClientFactory {
     @JvmStatic
     @WorkerThread
     fun getAuthToken(context: Context, authBase: URI, account: Account): String? {
-        return AuthenticatedWebClientV14.getAuthToken(context, authBase, account)
+        return getAuthToken(AccountManager.get(context), context, authBase, account)
     }
+
+
+    @WorkerThread
+    fun getAuthToken(accountManager: AccountManager, context: Context, authBase: URI?, account: Account): String? {
+        if (!AuthenticatedWebClientFactory.isAccountValid(context, accountManager, account, authBase)) {
+            throw AuthenticatedWebClient.InvalidAccountException()
+        }
+
+        val callback = AccountManagerCallback<Bundle> { future ->
+            try {
+                val bundle = future.result
+                if (bundle.containsKey(AccountManager.KEY_INTENT)) {
+                    val intent = bundle.get(AccountManager.KEY_INTENT) as Intent
+                    if (context is Activity) {
+                        context.startActivity(intent)
+                    } else {
+                        val pendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
+                        val contentInfo = context.getString(R.string.notification_authreq_contentInfo)
+                        val actionLabel = context.getString(R.string.notification_authreq_action)
+                        val notificationManager = NotificationManagerCompat.from(context)
+                        val channel = context.notificationChannel
+                        val notification = NotificationCompat.Builder(context, channel).setSmallIcon(R.drawable.ic_notification)
+                                .setContentInfo(contentInfo)
+                                .setContentIntent(pendingIntent)
+                                .addAction(R.drawable.ic_notification, actionLabel, pendingIntent)
+                                .build()
+                        notificationManager.notify(0, notification)
+                    }
+                }
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG, "The requested account does not exist")
+                throw AuthenticatedWebClient.InvalidAccountException(e)
+            } catch (e: OperationCanceledException) {
+                Log.d(TAG, "Failed to get account", e)
+            } catch (e: AuthenticatorException) {
+                Log.d(TAG, "Failed to get account", e)
+            } catch (e: IOException) {
+                Log.d(TAG, "Failed to get account", e)
+            }
+        }
+        val result: AccountManagerFuture<Bundle>
+        result = accountManager.getAuthToken(account, AuthenticatedWebClient.ACCOUNT_TOKEN_TYPE, null, false, callback, null)
+
+        val bundle: Bundle
+        try {
+            bundle = result.result
+        } catch (e: AuthenticatorException) {
+            Log.e(TAG, "Error logging in: ", e)
+            return null
+        } catch (e: IOException) {
+            Log.e(TAG, "Error logging in: ", e)
+            return null
+        } catch (e: OperationCanceledException) {
+            Log.e(TAG, "Error logging in: ", e)
+            return null
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "No such account: ", e)
+            return null
+        }
+
+        return bundle.getString(AccountManager.KEY_AUTHTOKEN)
+    }
+
 
     @Suppress("unused")
     @JvmStatic
@@ -109,6 +196,7 @@ object AuthenticatedWebClientFactory {
     @SuppressLint("MissingPermission")
     @WorkerThread
     @JvmStatic
+    @Deprecated("use the suspended version")
     fun isAccountValid(context: Context, accountManager: AccountManager, account: Account?, authBase: URI?): Boolean {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.GET_ACCOUNTS) == PackageManager.PERMISSION_GRANTED) {
             return isAccountValid(accountManager, account, authBase)
@@ -270,12 +358,14 @@ object AuthenticatedWebClientFactory {
 
     suspend fun tryDownloadAndInstallAuthenticator(activity: Activity): ActivityResult {
         if (SuspDownloadDialog.newInstance(-1).show(activity, AuthenticatedWebClient.DOWNLOAD_DIALOG_TAG).flatMap() != true) {
+            activity.reportStatus(AUTHENTICATOR_DOWNLOAD_REJECTED)
             return Maybe.cancelled()
         }
         if (!isActive) return Maybe.cancelled()
 
         val downloadedApk = DownloadFragment.download(activity, Uri.parse(AUTHENTICATOR_URL))
         if (!isActive) return Maybe.cancelled()
+        activity.reportStatus(AUTHENTICATOR_DOWNLOAD_SUCCESS)
 
         val downloaded = File(downloadedApk)
 
@@ -293,13 +383,19 @@ object AuthenticatedWebClientFactory {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        return activity.activityResult(installIntent)
+        return activity.activityResult(installIntent).also {
+            when (it) {
+                is Maybe.Ok -> activity.reportStatus(AUTHENTICATOR_INSTALL_SUCCESS)
+                is Maybe.Cancelled -> activity.reportStatus(AUTHENTICATOR_INSTALL_CANCELLED)
+                is Maybe.Error -> activity.reportStatus(AUTHENTICATOR_INSTALL_ERROR, it.e)
+            }
+        }
     }
 
 
 
     @JvmStatic
-    fun newClient(context: Context, account: Account, authbase: URI?): AuthenticatedWebClient {
+    fun newClient(account: Account, authbase: URI?): AuthenticatedWebClient {
         return AuthenticatedWebClientV14(account, authbase)
     }
 
