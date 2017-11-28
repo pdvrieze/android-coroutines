@@ -207,7 +207,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
 
 typealias ActivityResult = Maybe<Intent?>
 
-sealed class Maybe<T> {
+sealed class Maybe<out T> {
 
     data class Error(val e: Exception): Maybe<Nothing>() {
         override fun <R> flatMap(function: (Nothing) -> R): Nothing {
@@ -239,7 +239,7 @@ sealed class Maybe<T> {
 
     inline fun <R> onError(function: Error.(Exception) -> R):R? = if (this is Error) function(e) else null
     inline fun <R> onCancelled(function: Cancelled.() -> R):R? = if (this is Cancelled) function() else null
-    inline fun <R> onOk(function: Ok<in T>.(T) -> R):R? = if (this is Ok) function(data) else null
+    inline fun <R> onOk(function: Ok<*>.(T) -> R):R? = if (this is Ok) this.function(data) else null
 
     abstract fun <T> select(ok: T, cancelled:T, error: T):T
 
