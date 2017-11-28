@@ -213,14 +213,18 @@ sealed class Maybe<out T> {
         override fun <R> flatMap(function: (Nothing) -> R): Nothing {
             throw e
         }
+
+        override fun <T> select(ok: T, cancelled: T, error: T) = error
     }
 
     object Cancelled: Maybe<Nothing>() {
         override fun <R> flatMap(function: (Nothing) -> R) = null
+        override fun <T> select(ok: T, cancelled: T, error: T) = cancelled
     }
 
     data class Ok<T>(val data: T): Maybe<T>() {
         override fun <R> flatMap(function: (T) -> R): R = function(data)
+        override fun <T> select(ok: T, cancelled: T, error: T) = ok
     }
 
     abstract fun <R> flatMap(function: (T) -> R): R?
@@ -236,6 +240,8 @@ sealed class Maybe<out T> {
     inline fun <R> onError(function: (Exception) -> R):R? = if (this is Error) function(e) else null
     inline fun <R> onCancelled(function: () -> R):R? = if (this is Cancelled) function() else null
     inline fun <R> onOk(function: (T) -> R):R? = if (this is Ok) function(data) else null
+
+    abstract fun <T> select(ok: T, cancelled:T, error: T):T
 
     companion object {
         inline fun <T> error(e: Exception): Maybe<T> = Error(e) as Maybe<T>
