@@ -28,7 +28,6 @@ import nl.adaptivity.android.accountmanager.account
 import nl.adaptivity.android.accountmanager.accountName
 import nl.adaptivity.android.accountmanager.accountType
 import nl.adaptivity.android.accountmanager.hasFeatures
-import nl.adaptivity.android.coroutines.ActivityResult
 import nl.adaptivity.android.coroutines.Maybe
 import nl.adaptivity.android.coroutines.SerializableHandler
 import nl.adaptivity.android.coroutines.activityResult

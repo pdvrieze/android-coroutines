@@ -89,13 +89,13 @@ internal class AuthenticatedWebClientV14(override val account: Account, override
         return null
     }
 
-    override fun Activity.execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean, onError: (HttpURLConnection?) -> Unit, onSuccess: (HttpURLConnection)->Unit): Job {
+    override fun Activity.execute(request: AuthenticatedWebClient.WebRequest, currentlyInRetry: Boolean, onError: RequestFailure, onSuccess: RequestSuccess): Job {
         return launch {
             val connection = execute(this@execute, request)
             when {
                 connection==null -> onError(null)
-                connection.responseCode in 200..399 -> onSuccess(connection)
-                else -> onError(connection)
+                connection.responseCode in 200..399 -> try { onSuccess(connection) } finally { connection.disconnect() }
+                else -> try { onError(connection) } finally { connection.disconnect() }
             }
 
         }

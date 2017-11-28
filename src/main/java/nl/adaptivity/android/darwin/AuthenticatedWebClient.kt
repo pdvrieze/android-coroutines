@@ -231,6 +231,12 @@ interface AuthenticatedWebClient {
     @Throws(IOException::class)
     fun execute(context: Context, request: WebRequest): HttpURLConnection?
 
+    fun Activity.execute(request: WebRequest, onSuccess: RequestSuccess) =
+            execute(request, false, NULL_ERROR_HANDLER, onSuccess)
+
+    fun Activity.execute(request: WebRequest, onError: RequestFailure, onSuccess: RequestSuccess) =
+            execute(request, false, onError, onSuccess)
+
     /**
      * Execute the web request. This will launch it's own worker thread so no need to worry. The
      * onSuccess will be called on a working thread. The client is responsible for invoking the UI
@@ -242,9 +248,10 @@ interface AuthenticatedWebClient {
      * @param onError Called when the request fails for some reason
      * @param onSuccess Called when the request was successful.
      */
-    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean = false, onError: (HttpURLConnection?) -> Unit = {}, onSuccess: (HttpURLConnection) -> Unit): Job
+    fun Activity.execute(request: WebRequest, currentlyInRetry: Boolean, onError: RequestFailure, onSuccess: RequestSuccess): Job
 
     companion object {
+        private val NULL_ERROR_HANDLER: RequestFailure = RequestFailure { }
 
         const val KEY_ACCOUNT_NAME = "ACCOUNT_NAME"
 
@@ -261,3 +268,9 @@ interface AuthenticatedWebClient {
         const val DOWNLOAD_DIALOG_TAG = "DOWNLOAD_DIALOG"
     }
 }
+
+typealias RequestSuccess = IRequestSuccess// (HttpURLConnection)->Unit
+typealias RequestFailure = IRequestFailure//(HttpURLConnection?)->Unit
+
+inline operator fun IRequestSuccess.invoke(connection: HttpURLConnection) = onSuccess(connection)
+inline operator fun IRequestFailure.invoke(connection: HttpURLConnection?) = onFailure(connection)
