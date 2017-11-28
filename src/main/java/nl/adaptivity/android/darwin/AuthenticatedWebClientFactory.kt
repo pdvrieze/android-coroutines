@@ -226,7 +226,7 @@ object AuthenticatedWebClientFactory {
             }
         }
         if (!ensureAuthenticator(activity)) return Maybe.cancelled()
-        return activity.activityResult(selectAccount(activity, null, authBase)).map { it?.account }
+        return activity.activityResult(selectAccount(activity, null, authBase)).map { it?.account?.also { setStoredAccount(activity, it) } }
     }
 
     @JvmStatic
