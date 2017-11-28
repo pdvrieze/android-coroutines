@@ -22,7 +22,6 @@ val Intent.account: Account? get() {
 val Bundle.intent get() = get(AccountManager.KEY_INTENT) as Intent
 
 suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null): String? {
-    val activity: A? by activity.weakRef
     return suspendCancellableCoroutine<String?> { cont ->
         val callback = AccountManagerCallback<Bundle> { future: AccountManagerFuture<Bundle> ->
             if (future.isCancelled) {
@@ -50,8 +49,6 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
         }
 
         getAuthToken(account, authTokenType, options, false, callback, null)
-
-        TODO("implement")
     }
 }
 
