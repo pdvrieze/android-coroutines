@@ -292,19 +292,21 @@ object AuthenticatedWebClientFactory {
         }
         if (!ensureAuthenticator(activity)) return Maybe.cancelled()
         val selectAccountIntent = selectAccount(activity, null, authBase)
-        return activity.activityResult(selectAccountIntent).map { it?.account?.also { setStoredAccount(activity, it) } }
+        return activity.activityResult(selectAccountIntent)
+                .apply { activity.reportStatus(select(ACCOUNT_SELECTED, ACCOUNT_SELECTION_CANCELLED, ACCOUNT_SELECTION_FAILED)) }
+                .map { it?.account?.also { setStoredAccount(activity, it) } }
     }
 
     @JvmStatic
     fun tryEnsureAccount(context: Activity, authBase: URI?, callback: SerializableHandler<Activity, Maybe<Account?>>): Job {
-        return launch(start = CoroutineStart.UNDISPATCHED) {
+        return launch {
             callback(context, ensureAccount(context, authBase))
         }
     }
 
     @JvmStatic
     fun tryDownloadAndInstallAuthenticator(activity: Activity, handler: SerializableHandler<Activity, Maybe<Unit>>): Job {
-        return launch(start = CoroutineStart.UNDISPATCHED) {
+        return launch {
             handler(activity, tryDownloadAndInstallAuthenticator(activity))
         }
     }
@@ -336,11 +338,20 @@ object AuthenticatedWebClientFactory {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        activity.activityResult(installIntent).also { if (it is Maybe.Error) return it }
+        activity.activityResult(installIntent).also { result ->
+            result.onError {
+                activity.reportStatus(AUTHENTICATOR_INSTALL_ERROR)
+                return this
+            }
+        }
 
         return if(hasAuthenticator(AccountManager.get(activity))) {
+            activity.reportStatus(AUTHENTICATOR_INSTALL_SUCCESS)
             Maybe.Ok(Unit)
-        } else Maybe.cancelled()
+        } else {
+            activity.reportStatus(AUTHENTICATOR_INSTALL_CANCELLED)
+            Maybe.cancelled()
+        }
     }
 
 
