@@ -16,6 +16,8 @@ import com.esotericsoftware.kryo.serializers.FieldSerializerConfig
 import com.esotericsoftware.kryo.util.DefaultClassResolver
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import kotlinx.coroutines.experimental.CommonPool
+import org.objenesis.instantiator.ObjectInstantiator
+import org.objenesis.strategy.InstantiatorStrategy
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -350,10 +352,28 @@ val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceReso
 fun kryoAndroid(context: Context): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers() }
 
 fun Kryo.registerAndroidSerializers() {
-    instantiatorStrategy = Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy())
+    instantiatorStrategy = KotlinObjectInstantiatorStrategy(Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy()))
 
     register(_SafeContinuation, SafeContinuationSerializer(this))
     register(CommonPool::class.java, ObjectSerializer(this, CommonPool::class.java))
+}
+
+class KotlinObjectInstantiatorStrategy(private val fallback: InstantiatorStrategy) : InstantiatorStrategy {
+
+    class KotlinObjectInstantiator<T>(type: Class<T>): ObjectInstantiator<T> {
+        @Suppress("UNCHECKED_CAST")
+        private val INSTANCE = type.getField("INSTANCE").get(null) as T
+
+        override fun newInstance() = INSTANCE
+    }
+
+    override fun <T : Any?> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
+        if (type.constructors.isEmpty() && type.fields.any { it.name=="INSTANCE" }) {
+            return KotlinObjectInstantiator(type)
+        } else {
+            return fallback.newInstantiatorOf(type)
+        }
+    }
 }
 
 class AndroidKotlinResolver(private val context: Context?) : DefaultClassResolver() {
