@@ -261,8 +261,15 @@ sealed class Maybe<out T> {
 
     abstract fun <R> flatMap(function: (T) -> R): R?
 
+    /**
+     * Flatmap the identity function. Basically this gives the value for Ok, null when cancelled or
+     * throws the exception for an error state.
+     */
     fun flatMap(): T? = flatMap { it }
 
+    /**
+     * Create a new maybe with the function applied to the data (on Ok values only).
+     */
     fun <R> map(function: (T) -> R): Maybe<R> {
         @Suppress("UNCHECKED_CAST")
         return when(this) {
@@ -271,6 +278,9 @@ sealed class Maybe<out T> {
         }
     }
 
+    /**
+     * Helper to determine whether the maybe has a value.
+     */
     val isOk get() = this is Ok
 
     interface ErrorCallback { fun onError(e: Exception) }
