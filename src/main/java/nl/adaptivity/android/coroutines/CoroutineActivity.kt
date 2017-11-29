@@ -20,9 +20,15 @@ import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
- * Function that starts an activity and uses a callback on the result.
+ * Extension method for activity that invokes [Activity.startActivityForResult] and invokes the
+ * callback in [body] when complete. For use in Kotlin consider [activityResult] as a suspending
+ * function instead.
+ *
+ * @receiver The activity that is extended.
+ * @param intent The intent to invoke.
+ * @param body The callback invoked on completion.
  */
-fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<A, ActivityResult>) {
+fun <A:Activity> A.withActivityResult(intent: Intent, body: A.(ActivityResult)->Unit) {
     // Horrible hack to fix generics
     @Suppress("UNCHECKED_CAST")
     val contFragment = RetainedContinuationFragment(ParcelableContinuation(body, COROUTINEFRAGMENT_RESULTCODE_START))
@@ -33,6 +39,9 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: SerializableHandler<
     }
 }
 
+/**
+ * Asynchronously invoke [Activity.startActivityForResult] returning the result on completion.
+ */
 suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     return suspendCoroutine { continuation ->
         val fm = fragmentManager
@@ -43,9 +52,7 @@ suspend fun Activity.activityResult(intent:Intent): ActivityResult {
             fm.findFragmentByTag(RetainedContinuationFragment.TAG)?.let { remove(it) }
 
             add(contFragment, RetainedContinuationFragment.TAG)
-
-            commit()
-        }
+        }.commit()
 
 
         runOnUiThread {
@@ -55,6 +62,17 @@ suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     }
 }
 
+/**
+ * Extension method for activity that invokes [Activity.startActivityForResult] and invokes the
+ * callback in [body] when complete. For use in Kotlin consider [activityResult] as a suspending
+ * function instead.
+ *
+ * @receiver The activity that is extended.
+ * @param intent The intent to invoke.
+ * @param options The options to pass on the activity start.
+ * @param body The callback invoked on completion.
+ */
+@Suppress("unused")
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: SerializableHandler<A, ActivityResult>) {
     // Horrible hack to fix generics
@@ -71,15 +89,25 @@ const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00
 
 const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
 
-typealias SerializableHandler<A,T> = A.(T) -> Unit
+//typealias SerializableHandler<A,T> = A.(T) -> Unit
 
+interface SerializableHandler<A, T> {
+    operator fun invoke(activty: A, data:T)
+}
+
+@Suppress("FunctionName")
 fun <A:Activity, T> ParcelableContinuation(handler: SerializableHandler<A,T>, requestCode: Int = -1)
-        = ParcelableContinuationCompat(handler, requestCode)
+        = ParcelableContinuationCompat<A,T>({ handler(this, it) }, requestCode)
+
+@Suppress("FunctionName")
+fun <A:Activity, T> ParcelableContinuation(handler: A.(T) -> Unit, requestCode: Int = -1)
+        = ParcelableContinuationCompat<A,T>({ handler(this, it) }, requestCode)
 
 class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCode: Int, handlerOrContinuation: Any): ParcelableContinuation<T>(requestCode, handlerOrContinuation) {
 
-    constructor(handler: SerializableHandler<A, T>, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
+    constructor(handler: A.(T) -> Unit, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
 
+    @Suppress("unused")
     constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
 
 
@@ -99,18 +127,20 @@ class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCod
 
     override fun resume(context: Context, value: T) {
         val h = resolve(context)
+        @Suppress("UNCHECKED_CAST")
         when (h) {
             is Continuation<*> -> (h as Continuation<T>).resume(value)
-            is Function<*> -> (h as SerializableHandler<Context, T>).invoke(context, value)
+            is Function<*> -> (h as Context.(T?)->Unit).invoke(context, value)
             else -> throw IllegalStateException("Invalid continuation: ${h::class.java.name}")
         }
     }
 
     override fun resumeWithException(context: Context, exception: Exception) {
         val h = resolve(context)
+        @Suppress("UNCHECKED_CAST")
         when (h) {
             is Continuation<*> -> h.resumeWithException(exception)
-            is Function<*> -> (h as SerializableHandler<Context, T?>).invoke(context, null)
+            is Function<*> -> (h as Context.(T?)->Unit).invoke(context, null)
             else -> throw IllegalStateException("Invalid continuation: ${h::class.java.name}")
         }
     }
@@ -169,6 +199,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
         if (continuation is CancellableContinuation) {
             continuation.cancel()
         } else {
+            @Suppress("UNCHECKED_CAST")
             (continuation as Continuation<T?>).resume(null)
         }
     }
@@ -183,6 +214,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
 
     private fun resolve(context:Context): Continuation<T> {
         val h = continuation
+        @Suppress("UNCHECKED_CAST")
         return when (h) {
             is ByteArray -> (kryoAndroid(context).readClassAndObject(Input(h)) as Continuation<T>).also { continuation = it }
             else -> h as Continuation<T>
@@ -229,6 +261,8 @@ sealed class Maybe<out T> {
 
     abstract fun <R> flatMap(function: (T) -> R): R?
 
+    fun flatMap(): T? = flatMap { it }
+
     fun <R> map(function: (T) -> R): Maybe<R> {
         @Suppress("UNCHECKED_CAST")
         return when(this) {
@@ -236,6 +270,16 @@ sealed class Maybe<out T> {
             else -> this as Maybe<R>
         }
     }
+
+    val isOk get() = this is Ok
+
+    interface ErrorCallback { fun onError(e: Exception) }
+    interface CancellationCallback { fun onCancelled() }
+    interface SuccessCallback<in T> { fun onOk(d: T) }
+
+    fun onError(function: ErrorCallback) = if (this is Error) function.onError(e) else null
+    fun onCancelled(function: CancellationCallback) = if (this is Cancelled) function.onCancelled() else null
+    fun onOk(function: SuccessCallback<T>) = if (this is Ok) function.onOk(data) else null
 
     inline fun <R> onError(function: Error.(Exception) -> R):R? = if (this is Error) function(e) else null
     inline fun <R> onCancelled(function: Cancelled.() -> R):R? = if (this is Cancelled) function() else null
