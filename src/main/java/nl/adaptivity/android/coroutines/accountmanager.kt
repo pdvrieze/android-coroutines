@@ -1,7 +1,5 @@
 @file:JvmName("AccountManagerUtil")
-@file:Suppress("PackageDirectoryMismatch")
-
-package nl.adaptivity.android.accountmanager
+package nl.adaptivity.android.coroutines
 
 import android.accounts.*
 import android.app.Activity
@@ -11,17 +9,15 @@ import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
-import nl.adaptivity.android.coroutines.Maybe
-import nl.adaptivity.android.coroutines.withActivityResult
 
-val Intent.accountName get() = getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-val Intent.accountType get() = getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
-val Intent.account: Account? get() {
-    return Account(accountName ?: return null, accountType ?: return null)
-}
+// TODO This class is far from complete. Various account manager operations could be added.
 
-val Bundle.intent get() = get(AccountManager.KEY_INTENT) as Intent
-
+/**
+ * Get an authentication token from the account manager asynchronously. If required it will
+ * take care of launching the permissions dialogs as needed.
+ *
+ * @see [AccountManager.getAuthToken]
+ */
 suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null): String? {
     return suspendCancellableCoroutine<String?> { cont ->
         val callback = AccountManagerCallback<Bundle> { future: AccountManagerFuture<Bundle> ->
@@ -35,8 +31,8 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
                     return@AccountManagerCallback
                 }
                 if (resultBundle.containsKey(AccountManager.KEY_INTENT)) {
-                    val intent = resultBundle.intent
-                    activity?.withActivityResult(intent) { activityResult ->
+                    val intent = resultBundle.get(AccountManager.KEY_INTENT) as Intent
+                    activity.withActivityResult(intent) { activityResult ->
                         when (activityResult) {
                             is Maybe.Cancelled -> cont.cancel()
                             is Maybe.Ok -> async { cont.resume(getAuthToken(activity, account, authTokenType, options)) }

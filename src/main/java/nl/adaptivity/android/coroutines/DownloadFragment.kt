@@ -1,4 +1,4 @@
-package nl.adaptivity.android.darwin
+package nl.adaptivity.android.coroutines
 
 import android.app.Activity
 import android.app.DownloadManager
@@ -7,17 +7,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
-import nl.adaptivity.android.coroutines.Maybe
-import nl.adaptivity.android.coroutines.ParcelableContinuation
-import nl.adaptivity.android.darwinlib.R
-import nl.adaptivity.android.kotlin.bundle
-import nl.adaptivity.android.kotlin.set
 import java.io.File
 import java.net.URI
 import kotlin.coroutines.experimental.Continuation
@@ -69,7 +65,7 @@ class DownloadFragment(): Fragment() {
     }
 
 
-    private fun doDownload(activity: Activity, downloadUri: Uri, fileName: String, description: String = fileName, title: String = getString(R.string.download_title)) {
+    private fun doDownload(activity: Activity, downloadUri: Uri, fileName: String, description: String = fileName, title: String = fileName) {
         val downloadManager = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         if (downloadReference >= 0) {
             val query = DownloadManager.Query()
@@ -109,7 +105,7 @@ class DownloadFragment(): Fragment() {
 
         fun newInstance(continuation: Continuation<URI>): DownloadFragment {
             return DownloadFragment().apply {
-                arguments = bundle { it[KEY_CONTINUATION] = ParcelableContinuation<URI>(continuation) }
+                arguments = Bundle(1).apply { putParcelable(KEY_CONTINUATION, ParcelableContinuation<URI>(continuation)) }
             }
         }
 
@@ -130,6 +126,7 @@ class DownloadFragment(): Fragment() {
         /**
          * Async version of [download] that has a callback instead of being a suspend function.
          */
+        @JvmStatic
         fun download(activity: Activity, downloadUri: Uri, callback: (Maybe<URI>) -> Unit) {
             launch {
                 try {
@@ -149,3 +146,16 @@ class DownloadFragment(): Fragment() {
     }
 
 }
+
+/* Helper function to get an integer by name from a cursor. */
+private fun Cursor.getInt(columnName:String) = getInt(getColumnIndex(columnName))
+/* Helper function to get a string by name from a cursor. */
+private fun Cursor.getString(columnName:String) = getString(getColumnIndex(columnName))
+/* Helper function to get an uri by name from a cursor. */
+private fun Cursor.getUri(columnName:String) = URI.create(getString(getColumnIndex(columnName)))
+
+private inline var Intent.downloadId: Long
+    get() = getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+    set(value) { extras.putLong(DownloadManager.EXTRA_DOWNLOAD_ID, value) }
+
+private inline val Intent.isActionDownloadComplete get() = action == DownloadManager.ACTION_DOWNLOAD_COMPLETE

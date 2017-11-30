@@ -34,7 +34,11 @@ android {
 }
 
 dependencies {
-    implementation project(':darwinlib')
+    if (rootProject.name == "android-coroutines") {
+        implementation project(':')
+    } else {
+        implementation project(':android-coroutines')
+    }
 
 
     implementation 'com.android.support:appcompat-v7:26.1.0'
@@ -50,4 +54,11 @@ kotlin {
     experimental {
         coroutines "enable"
     }
+}
+
+
+repositories {
+    mavenLocal()
+    jcenter()
+    google()
 }

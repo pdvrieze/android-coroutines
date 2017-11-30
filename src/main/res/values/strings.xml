@@ -15,13 +15,5 @@
   -->
 
 <resources>
-
-    <string name="dlg_msg_confirm_authenticator_download">You do not have the darwin authenticator installed. Do you want it to be downloaded and installed for you?</string>
-    <string name="btn_confirm_download">Download</string>
-    <string name="download_title">Darwin Authenticator apk</string>
-    <string name="error_authenticator_not_installed">The authenticator is not installed</string>
-    <string name="permission_request_get_accounts">Please provide access to read account details.</string>
-    <string name="notification_authreq_contentInfo">DarwinAuth needs some input</string>
-    <string name="notification_authreq_action">Go</string>
     <string name="descriptionOverrideText">Please select the account you want to use.</string>
 </resources>

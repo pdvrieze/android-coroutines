@@ -12,8 +12,6 @@ import android.support.annotation.RequiresApi
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
 import kotlinx.coroutines.experimental.CancellableContinuation
-import nl.adaptivity.android.kotlin.bundle
-import nl.adaptivity.android.kotlin.set
 import nl.adaptivity.android.kryo.kryoAndroid
 import nl.adaptivity.android.kryo.writeKryoObject
 import kotlin.coroutines.experimental.Continuation
@@ -306,7 +304,7 @@ sealed class Maybe<out T> {
 }
 
 private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Maybe<Intent?>>) = RetainedContinuationFragment().also {
-    it.arguments = bundle(1) { it[KEY_ACTIVITY_CONTINUATION]= activityContinuation }
+    it.arguments = Bundle(1).apply { putParcelable(KEY_ACTIVITY_CONTINUATION, activityContinuation) }
 }
 
 class RetainedContinuationFragment : Fragment() {

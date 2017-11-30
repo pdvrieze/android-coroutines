@@ -14,36 +14,10 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'com.android.library'
-
-apply plugin: 'kotlin-android'
-
-apply plugin: 'kotlin-android-extensions'
-
-version = '1.1.99'
-description = 'Android support library for darwin functionality'
-
-//group = 'android'
-
-ext {
-    if (!rootProject.hasProperty('androidTarget')) {
-        androidTarget = 26
-    }
-    if (!rootProject.hasProperty('androidCompatVersion')) {
-        androidCompatVersion = androidTarget == 25 ? '25.3.1' : '26.1.0'
-    }
-    if (!rootProject.hasProperty('androidBuildToolsVersion')) {
-        androidBuildToolsVersion = androidTarget == 25 ? '25.0.3' : '26.0.2'
-    }
-    if (!rootProject.hasProperty('anko_version')) {
-        anko_version = '0.10.3'
-    }
-}
-
 buildscript {
     ext {
         if (!has('androidPluginVersion')) {
-            androidPluginVersion = '3.0.0'
+            androidPluginVersion = '3.0.1'
         }
         if (!has('kotlin_version')) {
             kotlin_version = '1.2.0'
@@ -63,6 +37,41 @@ buildscript {
     }
 }
 
+plugins {
+//    id "com.android.library"
+    id "com.jfrog.bintray" version "1.8.0"
+}
+
+apply plugin: 'com.android.library'
+
+apply plugin: 'maven-publish'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+
+version = '0.5'
+group = 'net.devrieze'
+description = 'Library to add coroutine support for Android flow'
+
+ext {
+    if (!rootProject.hasProperty('androidTarget')) {
+        androidTarget = 26
+    }
+    if (!rootProject.hasProperty('androidCompatVersion')) {
+        androidCompatVersion = androidTarget == 25 ? '25.3.1' : (26 ? '26.1.0' : '27.0.2' )
+    }
+    if (!rootProject.hasProperty('androidBuildToolsVersion')) {
+        androidBuildToolsVersion = '27.0.1'
+    }
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+    google()
+}
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.3.1'
@@ -75,7 +84,6 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion androidTarget
-        versionCode 2
         versionName version
     }
 
@@ -86,13 +94,16 @@ android {
 }
 
 dependencies {
-    implementation "com.android.support:support-annotations:${androidCompatVersion}"
     implementation "com.android.support:support-v4:${androidCompatVersion}"
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.esotericsoftware:kryo:4.0.1'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.19.3"
-//    compile "org.jetbrains.anko:anko-commons:$anko_version"
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.kotlin.srcDirs
 }
 
 kotlin {
@@ -100,3 +111,41 @@ kotlin {
         coroutines "enable"
     }
 }
+
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            artifact bundleRelease
+            groupId group
+            artifactId 'android-coroutines'
+
+            artifact androidSourcesJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+bintray {
+    if (rootProject.hasProperty('bintrayUser')) {
+        user = bintrayUser
+        key = bintrayApiKey
+    }
+    publications = ['MyPublication']
+
+    pkg {
+        repo = 'maven'
+        name = 'kotlinsql'
+        userOrg = 'pdvrieze'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/pdvrieze/kotlinsql.git'
+
+        version {
+            name = project.version
+            desc = 'Bugfix issue'
+            released = new Date()
+            vcsTag = "v$version"
+        }
+    }
+}
+
