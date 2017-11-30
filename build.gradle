@@ -135,14 +135,14 @@ bintray {
 
     pkg {
         repo = 'maven'
-        name = 'kotlinsql'
+        name = 'android-coroutines'
         userOrg = 'pdvrieze'
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/pdvrieze/kotlinsql.git'
+        vcsUrl = 'https://github.com/pdvrieze/android-coroutines.git'
 
         version {
             name = project.version
-            desc = 'Bugfix issue'
+            desc = 'Initial public release'
             released = new Date()
             vcsTag = "v$version"
         }
