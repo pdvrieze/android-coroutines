@@ -1,0 +1,4 @@
+include ':app'
+include ':android-coroutines'
+include ':android-coroutines:testapp'
+include ':darwinlib'

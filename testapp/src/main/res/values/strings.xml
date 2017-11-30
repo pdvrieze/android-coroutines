@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">TestApp</string>
+    <string name="lbl_cancelled">Cancelled</string>
+    <string name="lbl_restored">Restored</string>
+    <string name="label_ac_callback">Test activity callback</string>
+    <string name="label_ac_coroutine">Test activity coroutine</string>
+</resources>
