@@ -3,8 +3,7 @@
 /gen
 /bin
 *.iml
-/.idea/libraries
-/.idea/workspace.xml
+/.idea/*
 /wiki
 /pages
 /testapp/build
