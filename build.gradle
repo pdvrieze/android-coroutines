@@ -24,7 +24,6 @@ buildscript {
         }
     }
     repositories {
-        mavenLocal()
         jcenter()
         google()
         maven {
@@ -35,13 +34,11 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.0.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
         classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.15"
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0"
     }
 }
 
-plugins {
-//    id "com.android.library"
-    id "com.jfrog.bintray" version "1.8.0"
-}
+apply plugin: "com.jfrog.bintray"
 
 apply plugin: 'com.android.library'
 
@@ -54,7 +51,7 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'org.jetbrains.dokka-android'
 
 
-version = '0.6.0-pre'
+version = '0.6.0'
 group = 'net.devrieze'
 description = 'Library to add coroutine support for Android flow'
 
