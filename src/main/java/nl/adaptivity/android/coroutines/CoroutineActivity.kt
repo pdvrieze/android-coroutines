@@ -83,17 +83,30 @@ fun <A: Activity> A.withActivityResult(intent: Intent, options: Bundle?, body: S
     }
 }
 
+/**
+ * The starting (and for now only) result code that is used to start the activity. As it happens
+ * from a special fragment the result code is actually ignored and should be safe from conflict.
+ */
 const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00
 
+/**
+ * The [Bundle] key under which the continuation is stored.
+ */
 const val KEY_ACTIVITY_CONTINUATION = "activityContinuation"
 
-//typealias SerializableHandler<A,T> = A.(T) -> Unit
-
+/**
+ * Java compatibility interface to make the asynchronous use of [withActivityResult] with a callback
+ * much friendlier.
+ */
 interface SerializableHandler<A, T> {
     operator fun invoke(activty: A, data:T)
 }
 
+/**
+ * Java compatibility helper factory method
+ */
 @Suppress("FunctionName")
+@JvmOverloads
 fun <A:Activity, T> ParcelableContinuation(handler: SerializableHandler<A,T>, requestCode: Int = -1)
         = ParcelableContinuationCompat<A,T>({ handler(this, it) }, requestCode)
 
@@ -101,20 +114,42 @@ fun <A:Activity, T> ParcelableContinuation(handler: SerializableHandler<A,T>, re
 fun <A:Activity, T> ParcelableContinuation(handler: A.(T) -> Unit, requestCode: Int = -1)
         = ParcelableContinuationCompat<A,T>({ handler(this, it) }, requestCode)
 
+/**
+ * [ParcelableContinuation] subclass that not only works with continuations, but also handles
+ * Java and Kotlin callback lambdas.
+ *
+ * @param requestCode The request code that this continuation should resume on.
+ * @param handlerOrContinuation The executable object that handles the result.
+ */
 class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCode: Int, handlerOrContinuation: Any): ParcelableContinuation<T>(requestCode, handlerOrContinuation) {
 
+    /**
+     * Create a new  continuation with a lambda function callback.
+     */
     constructor(handler: A.(T) -> Unit, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
 
+    /**
+     * Create a new continuation with a continuation callback.
+     */
     @Suppress("unused")
     constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handlerOrContinuation = handler)
 
 
+    /**
+     * Inflate the object from the parcel.
+     * @param parcel The parcel to inflate from
+     *
+     * @see Parcelable.Creator.createFromParcel
+     */
     @Suppress("UNCHECKED_CAST")
     constructor(parcel: Parcel) :
             this(parcel.readInt(), handlerOrContinuation = ByteArray(parcel.readInt()).also { parcel.readByteArray(it) } ) {
         Log.d(TAG, "Read continuation from parcel")
     }
 
+    /**
+     * Helper function that performs the delayed deflation (from the byte array Kryo creates).
+     */
     private fun resolve(context:Context): Any {
         val h = continuation
         return when (h) {
@@ -133,7 +168,7 @@ class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCod
         }
     }
 
-    override fun resumeWithException(context: Context, exception: Exception) {
+    override fun resumeWithException(context: Context, exception: Throwable) {
         val h = resolve(context)
         @Suppress("UNCHECKED_CAST")
         when (h) {
@@ -143,8 +178,10 @@ class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCod
         }
     }
 
-    override fun describeContents() = 0
-
+    /**
+     * Helper class for [Parcelable]
+     * @see Parcelable.Creator
+     */
     companion object CREATOR : Parcelable.Creator<ParcelableContinuationCompat<Activity, Any?>> {
         override fun createFromParcel(parcel: Parcel): ParcelableContinuationCompat<Activity, Any?> {
             return ParcelableContinuationCompat(parcel)
@@ -159,17 +196,42 @@ class ParcelableContinuationCompat<A:Activity, T> private constructor(requestCod
     }
 }
 
+/**
+ * This class is part of the magic of serializing continuations in Android. This class only works
+ * with continuations, but [ParcelableContinuationCompat] extends it to work with callback lambda's
+ * as well (for regular async code).
+ *
+ * While the code will serialize from the actual continuation, the deserialization will happen
+ * in stages. This is required to support capture of android [Context] values in a sensible way
+ * (actually serializing them is invalid).
+ *
+ * @property requestCode When started with [Activity.startActivityForResult] this is the request code that may be
+ *                       used to match the continuation with it's start point. Currently ignored.
+ * @property continuation The actual continuation that is stored/wrapped.
+ */
 open class ParcelableContinuation<T> protected constructor(val requestCode: Int, protected var continuation: Any): Parcelable {
 
+    /**
+     * Create a new instance for the given handler.
+     */
     constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handler)
 
 
+    /**
+     * Read the continuation from the parcel. This will merely store the continuation data as a byte array for
+     * Kryo to deserialize later. (Note that the parcel cannot be validly stored).
+     */
     @Suppress("UNCHECKED_CAST")
     constructor(parcel: Parcel) :
             this(parcel.readInt(), continuation = ByteArray(parcel.readInt()).also { parcel.readByteArray(it) } ) {
         Log.d(TAG, "Read continuation from parcel")
     }
 
+    /**
+     * Write the continuation (and requestCode) to a parcel for safe storage. This will handle the
+     * case that the actual kryo data was still not deserialized and merely write it back to the new
+     * parcel.
+     */
     override fun writeToParcel(dest: Parcel, flags: Int) {
         Log.d(TAG, "Writing continuation to parcel")
         dest.writeInt(requestCode)
@@ -192,24 +254,52 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
         }
     }
 
-    open fun cancel(context: Context) {
+    /**
+     * Cancel the continuation. This wraps [CancellableContinuation.cancel] but also reflates (when
+     * needed) the continuation given the context. If the continuation is not a [CancellableContinuation]
+     * this code will invoke [Continuation.resume]`(null)`.
+     *
+     * @param context The context to use for reflation. If not parcelled this is ignored.
+     * @param cause The cause of the cancellation.
+     * @see CancellableContinuation.cancel
+     */
+    @JvmOverloads
+    open fun cancel(context: Context, cause: Throwable?=null) {
         val continuation = resolve(context)
         if (continuation is CancellableContinuation) {
-            continuation.cancel()
+            continuation.cancel(cause)
         } else {
             @Suppress("UNCHECKED_CAST")
             (continuation as Continuation<T?>).resume(null)
         }
     }
 
+    /**
+     * Resume the continuation while also using the context to reflate if needed.
+     *
+     * @param context The context to use for reflation. If not parcelled this is ignored.
+     * @param value The result value to use for resumption.
+     * @see Continuation.resume
+     *
+     */
     open fun resume(context: Context, value: T) {
         resolve(context).resume(value)
     }
 
-    open fun resumeWithException(context: Context, exception: Exception) {
+    /**
+     * Resume the continuation with an exception while also using the context to reflate if needed.
+
+     * @param context The context to use for reflation. If not parcelled this is ignored.
+     * @param exception The cause of the failure.
+     * @see Continuation.resume
+     */
+    open fun resumeWithException(context: Context, exception: Throwable) {
         resolve(context).resumeWithException(exception)
     }
 
+    /**
+     * Helper function that does the deserialization.
+     */
     private fun resolve(context:Context): Continuation<T> {
         val h = continuation
         @Suppress("UNCHECKED_CAST")
@@ -221,6 +311,10 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
 
     override fun describeContents() = 0
 
+    /**
+     * Helper for [Parcelable]
+     * @see [Parcelable.Creator]
+     */
     companion object CREATOR : Parcelable.Creator<ParcelableContinuation<Any?>> {
         override fun createFromParcel(parcel: Parcel): ParcelableContinuation<Any?> {
             return ParcelableContinuation(parcel)
@@ -231,77 +325,11 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
         }
 
         @JvmStatic
-        val TAG = ParcelableContinuation::class.java.simpleName
+        private val TAG = ParcelableContinuation::class.java.simpleName
     }
 }
 
 typealias ActivityResult = Maybe<Intent?>
-
-sealed class Maybe<out T> {
-
-    data class Error(val e: Exception): Maybe<Nothing>() {
-        override fun <R> flatMap(function: (Nothing) -> R): Nothing {
-            throw e
-        }
-
-        override fun <T> select(ok: T, cancelled: T, error: T) = error
-    }
-
-    object Cancelled: Maybe<Nothing>() {
-        override fun <R> flatMap(function: (Nothing) -> R) = null
-        override fun <T> select(ok: T, cancelled: T, error: T) = cancelled
-    }
-
-    data class Ok<T>(val data: T): Maybe<T>() {
-        override fun <R> flatMap(function: (T) -> R): R = function(data)
-        override fun <U> select(ok: U, cancelled: U, error: U) = ok
-    }
-
-    abstract fun <R> flatMap(function: (T) -> R): R?
-
-    /**
-     * Flatmap the identity function. Basically this gives the value for Ok, null when cancelled or
-     * throws the exception for an error state.
-     */
-    fun flatMap(): T? = flatMap { it }
-
-    /**
-     * Create a new maybe with the function applied to the data (on Ok values only).
-     */
-    fun <R> map(function: (T) -> R): Maybe<R> {
-        @Suppress("UNCHECKED_CAST")
-        return when(this) {
-            is Ok -> Ok(function(data))
-            else -> this as Maybe<R>
-        }
-    }
-
-    /**
-     * Helper to determine whether the maybe has a value.
-     */
-    val isOk get() = this is Ok
-
-    interface ErrorCallback { fun onError(e: Exception) }
-    interface CancellationCallback { fun onCancelled() }
-    interface SuccessCallback<in T> { fun onOk(d: T) }
-
-    fun onError(function: ErrorCallback) = if (this is Error) function.onError(e) else null
-    fun onCancelled(function: CancellationCallback) = if (this is Cancelled) function.onCancelled() else null
-    fun onOk(function: SuccessCallback<T>) = if (this is Ok) function.onOk(data) else null
-
-    inline fun <R> onError(function: Error.(Exception) -> R):R? = if (this is Error) function(e) else null
-    inline fun <R> onCancelled(function: Cancelled.() -> R):R? = if (this is Cancelled) function() else null
-    inline fun <R> onOk(function: Ok<*>.(T) -> R):R? = if (this is Ok) this.function(data) else null
-
-    abstract fun <T> select(ok: T, cancelled:T, error: T):T
-
-    companion object {
-        inline fun <T> error(e: Exception): Maybe<T> = Error(e) as Maybe<T>
-
-        inline fun <T> cancelled(): Maybe<T> = Cancelled as Maybe<T>
-    }
-
-}
 
 private fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Maybe<Intent?>>) = RetainedContinuationFragment().also {
     it.arguments = Bundle(1).apply { putParcelable(KEY_ACTIVITY_CONTINUATION, activityContinuation) }

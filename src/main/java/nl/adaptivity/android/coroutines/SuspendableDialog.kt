@@ -7,12 +7,19 @@ import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 
-
-open class SuspendableDialog<T>: DialogFragment() {
+/**
+ * Base class for dialog fragments that support coroutine based dialog invocation. Direct instantiation
+ * probably makes no sense, subclassing is expected.
+ */
+class SuspendableDialog<T>: DialogFragment() {
 
 
     private var callback: CancellableContinuation<DialogResult<T>>? = null
 
+    /**
+     * Actually show the fragment and get the result. This requires the dialog
+     * code to invoke [dispatchResult] on succesful completion.
+     */
     suspend fun show(activity: Activity, tag: String) : DialogResult<T> {
         super.show(activity.fragmentManager, tag)
         val d = this
@@ -22,6 +29,11 @@ open class SuspendableDialog<T>: DialogFragment() {
         }
     }
 
+    /**
+     * Not only implement the standard functionality, but also use this as a cancellation on
+     * the dialog. If the continuation was not cancellable this will equal to resuming with a
+     * null result.
+     */
     override fun onDismiss(dialog: DialogInterface?) {
         super.onDismiss(dialog)
         callback?.let { callback ->
@@ -30,6 +42,11 @@ open class SuspendableDialog<T>: DialogFragment() {
         }
     }
 
+    /**
+     * Not only implement the standard functionality, but also use this as a cancellation on
+     * the dialog. If the continuation was not cancellable this will equal to resuming with a
+     * null result. Functionally equivalent to [onDismiss]
+     */
     override fun onCancel(dialog: DialogInterface?) {
         super.onCancel(dialog)
         callback?.let { callback ->
@@ -38,28 +55,16 @@ open class SuspendableDialog<T>: DialogFragment() {
         }
     }
 
+    /**
+     * Subclasses must call this to resume [show] with the expected result.
+     */
     protected fun dispatchResult(resultValue: T) {
         callback?.let { callback ->
             this.callback = null // Set the property to null to prevent reinvocation
-            callback.resume(DialogResult.Success(resultValue))
+            callback.resume(Maybe.Ok(resultValue))
         }
     }
 }
 
-/**
- * Class representing the result of a dialog
- */
-sealed class DialogResult<T> {
-    private object Cancelled: DialogResult<Any>() {
-        override fun flatMap() = null
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T> Cancelled(): DialogResult<T> = Cancelled as DialogResult<T>
-
-    data class Success<T>(val value: T): DialogResult<T>() {
-        override fun flatMap() = value
-    }
-
-    abstract fun flatMap(): T?
-}
+@Deprecated("Compatibility alias, as Maybe should be used, not DialogResult", ReplaceWith("Maybe<T>"))
+typealias DialogResult<T> = Maybe<T>

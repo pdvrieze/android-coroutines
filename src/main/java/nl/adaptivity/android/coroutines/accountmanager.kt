@@ -5,6 +5,7 @@ import android.accounts.*
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.support.annotation.RequiresPermission
 import kotlinx.coroutines.experimental.CancellableContinuation
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.async
@@ -18,6 +19,7 @@ import kotlinx.coroutines.experimental.suspendCancellableCoroutine
  *
  * @see [AccountManager.getAuthToken]
  */
+@RequiresPermission("android.permission.USE_CREDENTIALS")
 suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Account, authTokenType:String, options: Bundle? = null): String? {
     return suspendCancellableCoroutine<String?> { cont ->
         val callback = AccountManagerCallback<Bundle> { future: AccountManagerFuture<Bundle> ->
@@ -49,7 +51,13 @@ suspend fun <A: Activity> AccountManager.getAuthToken(activity: A, account: Acco
     }
 }
 
-private class CoroutineAccountManagerCallback<T>(private val cont: CancellableContinuation<T>): AccountManagerCallback<T> {
+/**
+ * Callback class that uses a continuation as the callback for the account manager. Note that
+ * this callback is NOT designed to survive the destruction of the [Context] ([Activity]).
+ *
+ * @property cont The continuation that will be invoked on completion.
+ */
+class CoroutineAccountManagerCallback<T>(private val cont: CancellableContinuation<T>): AccountManagerCallback<T> {
     override fun run(future: AccountManagerFuture<T>) {
         try {
             if (future.isCancelled) {
@@ -67,12 +75,21 @@ private class CoroutineAccountManagerCallback<T>(private val cont: CancellableCo
     }
 }
 
-private suspend inline fun <R> AccountManager.callAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
+/**
+ * Helper function that helps with calling account manager operations asynchronously.
+ */
+suspend inline fun <R> AccountManager.callAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
     return suspendCancellableCoroutine<R> { cont ->
         operation(this@callAsync, CoroutineAccountManagerCallback(cont))
     }
 }
 
+/**
+ * Determine whether the account manager has the given features. This is the suspending equivalent of
+ * [AccountManager.hasFeatures].
+ *
+ * @see [AccountManager.hasFeatures].
+ */
 suspend fun AccountManager.hasFeatures(account: Account, features: Array<String?>):Boolean {
     return callAsync { callback -> hasFeatures(account, features, callback, null) }
 }

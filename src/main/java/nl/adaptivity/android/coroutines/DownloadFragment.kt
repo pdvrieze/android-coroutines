@@ -103,6 +103,10 @@ class DownloadFragment(): Fragment() {
         private const val KEY_CONTINUATION = "_CONTINUATION_"
         private var fragNo = 0
 
+        /**
+         * Create a new instance of the fragment with the given continuation as parameter.
+         */
+        @Deprecated("This should be private. Use download directly instead", level = DeprecationLevel.WARNING)
         fun newInstance(continuation: Continuation<URI>): DownloadFragment {
             return DownloadFragment().apply {
                 arguments = Bundle(1).apply { putParcelable(KEY_CONTINUATION, ParcelableContinuation<URI>(continuation)) }
@@ -114,6 +118,7 @@ class DownloadFragment(): Fragment() {
          */
         suspend fun download(activity: Activity, downloadUri: Uri): URI {
             return suspendCancellableCoroutine<URI> { cont ->
+                @Suppress("DEPRECATION")
                 val frag = newInstance(cont)
                 activity.fragmentManager.beginTransaction().add(frag, nextTag()).commit()
                 activity.runOnUiThread {
