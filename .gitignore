@@ -5,3 +5,5 @@
 *.iml
 /.idea/libraries
 /.idea/workspace.xml
+/wiki
+/pages
