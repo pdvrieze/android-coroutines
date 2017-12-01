@@ -34,6 +34,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.0.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
+        classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.15"
     }
 }
 
@@ -49,6 +50,8 @@ apply plugin: 'maven-publish'
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
+
+apply plugin: 'org.jetbrains.dokka-android'
 
 
 version = '0.5'
@@ -110,6 +113,15 @@ kotlin {
     experimental {
         coroutines "enable"
     }
+}
+
+dokka {
+    linkMapping {
+        dir='src/main/java'
+        url = 'https://github.com/pdvrieze/android-coroutines/tree/master/src/main/java'
+        suffix = '#L'
+    }
+    outputFormat = 'gfm'
 }
 
 publishing {
