@@ -5,5 +5,6 @@ internal enum class KryoAndroidConstants {
     RESUMED,
     COROUTINE_SUSPENDED,
     APPLICATIONCONTEXT,
-    CONTEXT
+    CONTEXT,
+    FRAGMENT
 }
