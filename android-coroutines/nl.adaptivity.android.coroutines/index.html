@@ -1,0 +1,152 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>nl.adaptivity.android.coroutines - android-coroutines</title>
+<link rel="stylesheet" href="../../style.css">
+</HEAD>
+<BODY>
+<a href="../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href=".">nl.adaptivity.android.coroutines</a><br/>
+<br/>
+<h2>Package nl.adaptivity.android.coroutines</h2>
+<h3>Types</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-dialog-result/index.html">DialogResult</a></p>
+</td>
+<td>
+<code><span class="keyword">sealed</span> <span class="keyword">class </span><span class="identifier">DialogResult</span><span class="symbol">&lt;</span><span class="identifier">T</span><span class="symbol">&gt;</span></code>
+<p>Class representing the result of a dialog</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-download-fragment/index.html">DownloadFragment</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">DownloadFragment</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Fragment.html"><span class="identifier">Fragment</span></a></code>
+<p>Fragment that encapsulates the state of downloading a file.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-maybe/index.html">Maybe</a></p>
+</td>
+<td>
+<code><span class="keyword">sealed</span> <span class="keyword">class </span><span class="identifier">Maybe</span><span class="symbol">&lt;</span><span class="keyword">out</span>&nbsp;<span class="identifier">T</span><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-parcelable-continuation/index.html">ParcelableContinuation</a></p>
+</td>
+<td>
+<code><span class="keyword">open</span> <span class="keyword">class </span><span class="identifier">ParcelableContinuation</span><span class="symbol">&lt;</span><span class="identifier">T</span><span class="symbol">&gt;</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-parcelable-continuation-compat/index.html">ParcelableContinuationCompat</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">ParcelableContinuationCompat</span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier">T</span><span class="symbol">&gt;</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="-parcelable-continuation/index.html"><span class="identifier">ParcelableContinuation</span></a><span class="symbol">&lt;</span><span class="identifier">T</span><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-retained-continuation-fragment/index.html">RetainedContinuationFragment</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">RetainedContinuationFragment</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Fragment.html"><span class="identifier">Fragment</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-serializable-handler/index.html">SerializableHandler</a></p>
+</td>
+<td>
+<code><span class="keyword">interface </span><span class="identifier">SerializableHandler</span><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">, </span><span class="identifier">T</span><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-suspendable-dialog/index.html">SuspendableDialog</a></p>
+</td>
+<td>
+<code><span class="keyword">open</span> <span class="keyword">class </span><span class="identifier">SuspendableDialog</span><span class="symbol">&lt;</span><span class="identifier">T</span><span class="symbol">&gt;</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/DialogFragment.html"><span class="identifier">DialogFragment</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Type Aliases</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-activity-result.html">ActivityResult</a></p>
+</td>
+<td>
+<code><span class="keyword">typealias </span><span class="identifier">ActivityResult</span>&nbsp;<span class="symbol">=</span>&nbsp;<a href="-maybe/index.html"><span class="identifier">Maybe</span></a><span class="symbol">&lt;</span><a href="https://developer.android.com/reference/android/content/Intent.html"><span class="identifier">Intent</span></a><span class="symbol">?</span><span class="symbol">&gt;</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Extensions for External Classes</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="android.accounts.-account-manager/index.html">android.accounts.AccountManager</a></p>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="android.app.-activity/index.html">android.app.Activity</a></p>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-c-o-r-o-u-t-i-n-e-f-r-a-g-m-e-n-t_-r-e-s-u-l-t-c-o-d-e_-s-t-a-r-t.html">COROUTINEFRAGMENT_RESULTCODE_START</a></p>
+</td>
+<td>
+<code><span class="keyword">const</span> <span class="keyword">val </span><span class="identifier">COROUTINEFRAGMENT_RESULTCODE_START</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-k-e-y_-a-c-t-i-v-i-t-y_-c-o-n-t-i-n-u-a-t-i-o-n.html">KEY_ACTIVITY_CONTINUATION</a></p>
+</td>
+<td>
+<code><span class="keyword">const</span> <span class="keyword">val </span><span class="identifier">KEY_ACTIVITY_CONTINUATION</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-parcelable-continuation.html">ParcelableContinuation</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier">T</span><span class="symbol">&gt;</span> <span class="identifier">ParcelableContinuation</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$ParcelableContinuation(nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.ParcelableContinuation.A, nl.adaptivity.android.coroutines.ParcelableContinuation.T)), kotlin.Int)/handler">handler</span><span class="symbol">:</span>&nbsp;<a href="-serializable-handler/index.html"><span class="identifier">SerializableHandler</span></a><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">,</span>&nbsp;<span class="identifier">T</span><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$ParcelableContinuation(nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.ParcelableContinuation.A, nl.adaptivity.android.coroutines.ParcelableContinuation.T)), kotlin.Int)/requestCode">requestCode</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a>&nbsp;<span class="symbol">=</span>&nbsp;-1<span class="symbol">)</span><span class="symbol">: </span><a href="-parcelable-continuation-compat/index.html"><span class="identifier">ParcelableContinuationCompat</span></a><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">,</span>&nbsp;<span class="identifier">T</span><span class="symbol">&gt;</span></code><br/>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier">T</span><span class="symbol">&gt;</span> <span class="identifier">ParcelableContinuation</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$ParcelableContinuation(kotlin.Function2((nl.adaptivity.android.coroutines.ParcelableContinuation.A, nl.adaptivity.android.coroutines.ParcelableContinuation.T, kotlin.Unit)), kotlin.Int)/handler">handler</span><span class="symbol">:</span>&nbsp;<span class="identifier">A</span><span class="symbol">.</span><span class="symbol">(</span><span class="identifier">T</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$ParcelableContinuation(kotlin.Function2((nl.adaptivity.android.coroutines.ParcelableContinuation.A, nl.adaptivity.android.coroutines.ParcelableContinuation.T, kotlin.Unit)), kotlin.Int)/requestCode">requestCode</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a>&nbsp;<span class="symbol">=</span>&nbsp;-1<span class="symbol">)</span><span class="symbol">: </span><a href="-parcelable-continuation-compat/index.html"><span class="identifier">ParcelableContinuationCompat</span></a><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">,</span>&nbsp;<span class="identifier">T</span><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="with-activity-result.html">withActivityResult</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">&gt;</span> <span class="identifier">A</span><span class="symbol">.</span><span class="identifier">withActivityResult</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/intent">intent</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Intent.html"><span class="identifier">Intent</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/body">body</span><span class="symbol">:</span>&nbsp;<span class="identifier">A</span><span class="symbol">.</span><span class="symbol">(</span><a href="-activity-result.html"><span class="identifier">ActivityResult</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code><br/>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">&gt;</span> <span class="identifier">A</span><span class="symbol">.</span><span class="identifier">withActivityResult</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/intent">intent</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Intent.html"><span class="identifier">Intent</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/options">options</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Bundle.html"><span class="identifier">Bundle</span></a><span class="symbol">?</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/body">body</span><span class="symbol">:</span>&nbsp;<a href="-serializable-handler/index.html"><span class="identifier">SerializableHandler</span></a><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">,</span>&nbsp;<a href="-activity-result.html"><span class="identifier">ActivityResult</span></a><span class="symbol">&gt;</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Extension method for activity that invokes <a href="https://developer.android.com/reference/android/app/Activity.html#startActivityForResult(android.content.Intent, int)">Activity.startActivityForResult</a> and invokes the
+callback in <a href="with-activity-result.html#nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/body">body</a> when complete. For use in Kotlin consider <a href="android.app.-activity/activity-result.html">activityResult</a> as a suspending
+function instead.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

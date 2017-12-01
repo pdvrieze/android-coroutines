@@ -1,0 +1,20 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>kryoAndroid - android-coroutines</title>
+<link rel="stylesheet" href="../../style.css">
+</HEAD>
+<BODY>
+<a href="../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href="index.html">nl.adaptivity.android.kryo</a>&nbsp;/&nbsp;<a href=".">kryoAndroid</a><br/>
+<br/>
+<h1>kryoAndroid</h1>
+<a name="nl.adaptivity.android.kryo$kryoAndroid"></a>
+<code><span class="keyword">val </span><span class="identifier">kryoAndroid</span><span class="symbol">: </span><span class="identifier">Kryo</span></code>
+<p>Get a Kryo serializer for a context-less application. For serialization this should not make
+a difference, but for deserialization any contexts present in the state will lead to failure.</p>
+<a name="nl.adaptivity.android.kryo$kryoAndroid(android.content.Context)"></a>
+<code><span class="keyword">fun </span><span class="identifier">kryoAndroid</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo$kryoAndroid(android.content.Context)/context">context</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Context.html"><span class="identifier">Context</span></a><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">Kryo</span></code>
+<p>Get a Kryo serializer that handles Android contexts special. It allows dynamic replacement of
+markers indicating a context with the passed in context (or application context if that applies).</p>
+</BODY>
+</HTML>

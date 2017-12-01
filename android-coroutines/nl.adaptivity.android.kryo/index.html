@@ -1,0 +1,108 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>nl.adaptivity.android.kryo - android-coroutines</title>
+<link rel="stylesheet" href="../../style.css">
+</HEAD>
+<BODY>
+<a href="../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href=".">nl.adaptivity.android.kryo</a><br/>
+<br/>
+<h2>Package nl.adaptivity.android.kryo</h2>
+<h3>Types</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-android-kotlin-resolver/index.html">AndroidKotlinResolver</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">AndroidKotlinResolver</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">DefaultClassResolver</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-kotlin-object-instantiator-strategy/index.html">KotlinObjectInstantiatorStrategy</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">KotlinObjectInstantiatorStrategy</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">InstantiatorStrategy</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-kryo-parcelable/index.html">KryoParcelable</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">KryoParcelable</span><span class="symbol">&lt;</span><span class="keyword">out</span>&nbsp;<span class="identifier">T</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html"><span class="identifier">Any</span></a><span class="symbol">&gt;</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
+<p>A <a href="https://developer.android.com/reference/android/os/Parcelable.html">Parcelable</a> that can be stored using <a href="#">Kryo</a>. For now it is hardcoded to use the Kryo
+object created by <a href="kryo-android.html">kryoAndroid</a>.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-parcel-input/index.html">ParcelInput</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">ParcelInput</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">Input</span></code>
+<p>Input class that uses a parcel to serialize. Perhaps not sustainable and ByteArrayStreams are better.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-parcel-output/index.html">ParcelOutput</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">ParcelOutput</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">Output</span></code>
+<p>Output class that uses a parcel to serialize. Perhaps not sustainable and ByteArrayStreams are better.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Extensions for External Classes</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="android.os.-parcel/index.html">android.os.Parcel</a></p>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="com.esotericsoftware.kryo.-kryo/index.html">com.esotericsoftware.kryo.Kryo</a></p>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="kryo-android.html">kryoAndroid</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">kryoAndroid</span><span class="symbol">: </span><span class="identifier">Kryo</span></code>
+<p>Get a Kryo serializer for a context-less application. For serialization this should not make
+a difference, but for deserialization any contexts present in the state will lead to failure.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="kryo-android.html">kryoAndroid</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">kryoAndroid</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo$kryoAndroid(android.content.Context)/context">context</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Context.html"><span class="identifier">Context</span></a><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">Kryo</span></code>
+<p>Get a Kryo serializer that handles Android contexts special. It allows dynamic replacement of
+markers indicating a context with the passed in context (or application context if that applies).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

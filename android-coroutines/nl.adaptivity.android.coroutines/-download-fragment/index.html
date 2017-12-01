@@ -1,0 +1,83 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>DownloadFragment - android-coroutines</title>
+<link rel="stylesheet" href="../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href="../index.html">nl.adaptivity.android.coroutines</a>&nbsp;/&nbsp;<a href=".">DownloadFragment</a><br/>
+<br/>
+<h1>DownloadFragment</h1>
+<code><span class="keyword">class </span><span class="identifier">DownloadFragment</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Fragment.html"><span class="identifier">Fragment</span></a></code>
+<p>Fragment that encapsulates the state of downloading a file.</p>
+<p>TODO Actually handle the case where download completed when the activity is in the background.</p>
+<h3>Constructors</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-init-.html">&lt;init&gt;</a></p>
+</td>
+<td>
+<code><span class="identifier">DownloadFragment</span><span class="symbol">(</span><span class="symbol">)</span></code>
+<p>Fragment that encapsulates the state of downloading a file.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="download-reference.html">downloadReference</a></p>
+</td>
+<td>
+<code><span class="keyword">var </span><span class="identifier">downloadReference</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html"><span class="identifier">Long</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="on-create.html">onCreate</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">onCreate</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment$onCreate(android.os.Bundle)/savedInstanceState">savedInstanceState</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Bundle.html"><span class="identifier">Bundle</span></a><span class="symbol">?</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="on-save-instance-state.html">onSaveInstanceState</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">onSaveInstanceState</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment$onSaveInstanceState(android.os.Bundle)/outState">outState</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Bundle.html"><span class="identifier">Bundle</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Companion Object Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="download.html">download</a></p>
+</td>
+<td>
+<code><span class="keyword">suspend</span> <span class="keyword">fun </span><span class="identifier">download</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri)/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri)/downloadUri">downloadUri</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/net/Uri.html"><span class="identifier">Uri</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://developer.android.com/reference/java/net/URI.html"><span class="identifier">URI</span></a></code>
+<p>Download the resource at <a href="download.html#nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri)/downloadUri">downloadUri</a> and return a URI of the local location</p>
+<code><span class="keyword">fun </span><span class="identifier">download</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri, kotlin.Function1((nl.adaptivity.android.coroutines.Maybe((java.net.URI)), kotlin.Unit)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri, kotlin.Function1((nl.adaptivity.android.coroutines.Maybe((java.net.URI)), kotlin.Unit)))/downloadUri">downloadUri</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/net/Uri.html"><span class="identifier">Uri</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$download(android.app.Activity, android.net.Uri, kotlin.Function1((nl.adaptivity.android.coroutines.Maybe((java.net.URI)), kotlin.Unit)))/callback">callback</span><span class="symbol">:</span>&nbsp;<span class="symbol">(</span><a href="../-maybe/index.html"><span class="identifier">Maybe</span></a><span class="symbol">&lt;</span><a href="https://developer.android.com/reference/java/net/URI.html"><span class="identifier">URI</span></a><span class="symbol">&gt;</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Async version of <a href="download.html">download</a> that has a callback instead of being a suspend function.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="new-instance.html">newInstance</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">newInstance</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.DownloadFragment.Companion$newInstance(kotlin.coroutines.experimental.Continuation((java.net.URI)))/continuation">continuation</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines.experimental/-continuation/index.html"><span class="identifier">Continuation</span></a><span class="symbol">&lt;</span><a href="https://developer.android.com/reference/java/net/URI.html"><span class="identifier">URI</span></a><span class="symbol">&gt;</span><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">DownloadFragment</span></code></td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

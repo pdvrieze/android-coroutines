@@ -1,0 +1,13 @@
+$dokka.format:html
+$dokka.linkExtension:html
+$dokka.location:nl.adaptivity.android.coroutines$activityResult(android.app.Activity, android.content.Intent)nl.adaptivity.android.coroutines/android.app.-activity/activity-result.html
+$dokka.location:nl.adaptivity.android.coroutines$getAuthToken(android.accounts.AccountManager, nl.adaptivity.android.coroutines.getAuthToken.A, android.accounts.Account, kotlin.String, android.os.Bundle)nl.adaptivity.android.coroutines/android.accounts.-account-manager/get-auth-token.html
+$dokka.location:nl.adaptivity.android.coroutines$hasFeatures(android.accounts.AccountManager, android.accounts.Account, kotlin.Array((kotlin.String)))nl.adaptivity.android.coroutines/android.accounts.-account-manager/has-features.html
+$dokka.location:nl.adaptivity.android.kryo$readKryoObject(android.os.Parcel, android.content.Context)nl.adaptivity.android.kryo/android.os.-parcel/read-kryo-object.html
+$dokka.location:nl.adaptivity.android.kryo$readKryoObject(android.os.Parcel, com.esotericsoftware.kryo.Kryo)nl.adaptivity.android.kryo/android.os.-parcel/read-kryo-object.html
+$dokka.location:nl.adaptivity.android.kryo$readKryoObject(android.os.Parcel, java.lang.Class((nl.adaptivity.android.kryo.readKryoObject.T)), android.content.Context)nl.adaptivity.android.kryo/android.os.-parcel/read-kryo-object.html
+$dokka.location:nl.adaptivity.android.kryo$readKryoObject(android.os.Parcel, java.lang.Class((nl.adaptivity.android.kryo.readKryoObject.T)), com.esotericsoftware.kryo.Kryo)nl.adaptivity.android.kryo/android.os.-parcel/read-kryo-object.html
+$dokka.location:nl.adaptivity.android.kryo$registerAndroidSerializers(com.esotericsoftware.kryo.Kryo)nl.adaptivity.android.kryo/com.esotericsoftware.kryo.-kryo/register-android-serializers.html
+$dokka.location:nl.adaptivity.android.kryo$writeKryoObject(android.os.Parcel, kotlin.Any, com.esotericsoftware.kryo.Kryo)nl.adaptivity.android.kryo/android.os.-parcel/write-kryo-object.html
+nl.adaptivity.android.coroutines
+nl.adaptivity.android.kryo

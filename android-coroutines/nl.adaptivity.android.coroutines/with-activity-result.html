@@ -1,0 +1,38 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>withActivityResult - android-coroutines</title>
+<link rel="stylesheet" href="../../style.css">
+</HEAD>
+<BODY>
+<a href="../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href="index.html">nl.adaptivity.android.coroutines</a>&nbsp;/&nbsp;<a href=".">withActivityResult</a><br/>
+<br/>
+<h1>withActivityResult</h1>
+<a name="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))"></a>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">&gt;</span> <span class="identifier">A</span><span class="symbol">.</span><span class="identifier">withActivityResult</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/intent">intent</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Intent.html"><span class="identifier">Intent</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/body">body</span><span class="symbol">:</span>&nbsp;<span class="identifier">A</span><span class="symbol">.</span><span class="symbol">(</span><a href="-activity-result.html"><span class="identifier">ActivityResult</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Extension method for activity that invokes <a href="https://developer.android.com/reference/android/app/Activity.html#startActivityForResult(android.content.Intent, int)">Activity.startActivityForResult</a> and invokes the
+callback in <a href="with-activity-result.html#nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, kotlin.Function2((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)), kotlin.Unit)))/body">body</a> when complete. For use in Kotlin consider <a href="android.app.-activity/activity-result.html">activityResult</a> as a suspending
+function instead.</p>
+<h3>Parameters</h3>
+<p><a name="intent"></a>
+<code>intent</code> - The intent to invoke.</p>
+<p><a name="body"></a>
+<code>body</code> - The callback invoked on completion.</p>
+<p><strong>Receiver</strong><br/>
+The activity that is extended.</p>
+<a name="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))"></a>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">A</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">&gt;</span> <span class="identifier">A</span><span class="symbol">.</span><span class="identifier">withActivityResult</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/intent">intent</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/content/Intent.html"><span class="identifier">Intent</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/options">options</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Bundle.html"><span class="identifier">Bundle</span></a><span class="symbol">?</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/body">body</span><span class="symbol">:</span>&nbsp;<a href="-serializable-handler/index.html"><span class="identifier">SerializableHandler</span></a><span class="symbol">&lt;</span><span class="identifier">A</span><span class="symbol">,</span>&nbsp;<a href="-activity-result.html"><span class="identifier">ActivityResult</span></a><span class="symbol">&gt;</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Extension method for activity that invokes <a href="https://developer.android.com/reference/android/app/Activity.html#startActivityForResult(android.content.Intent, int)">Activity.startActivityForResult</a> and invokes the
+callback in <a href="with-activity-result.html#nl.adaptivity.android.coroutines$withActivityResult(nl.adaptivity.android.coroutines.withActivityResult.A, android.content.Intent, android.os.Bundle, nl.adaptivity.android.coroutines.SerializableHandler((nl.adaptivity.android.coroutines.withActivityResult.A, nl.adaptivity.android.coroutines.Maybe((android.content.Intent)))))/body">body</a> when complete. For use in Kotlin consider <a href="android.app.-activity/activity-result.html">activityResult</a> as a suspending
+function instead.</p>
+<h3>Parameters</h3>
+<p><a name="intent"></a>
+<code>intent</code> - The intent to invoke.</p>
+<p><a name="options"></a>
+<code>options</code> - The options to pass on the activity start.</p>
+<p><a name="body"></a>
+<code>body</code> - The callback invoked on completion.</p>
+<p><strong>Receiver</strong><br/>
+The activity that is extended.</p>
+</BODY>
+</HTML>

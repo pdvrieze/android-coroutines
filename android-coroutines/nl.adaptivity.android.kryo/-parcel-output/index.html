@@ -1,0 +1,67 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>ParcelOutput - android-coroutines</title>
+<link rel="stylesheet" href="../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href="../index.html">nl.adaptivity.android.kryo</a>&nbsp;/&nbsp;<a href=".">ParcelOutput</a><br/>
+<br/>
+<h1>ParcelOutput</h1>
+<code><span class="keyword">class </span><span class="identifier">ParcelOutput</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">Output</span></code>
+<p>Output class that uses a parcel to serialize. Perhaps not sustainable and ByteArrayStreams are better.</p>
+<h3>Constructors</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-init-.html">&lt;init&gt;</a></p>
+</td>
+<td>
+<code><span class="identifier">ParcelOutput</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.Int)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.Int)/bufferSize">bufferSize</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a>&nbsp;<span class="symbol">=</span>&nbsp;DEFAULT_BUFFER<span class="symbol">)</span></code><br/>
+<code><span class="identifier">ParcelOutput</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.Int, kotlin.Int)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.Int, kotlin.Int)/bufferSize">bufferSize</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.Int, kotlin.Int)/maxBufferSize">maxBufferSize</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span></code><br/>
+<code><span class="identifier">ParcelOutput</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.ByteArray)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.ByteArray)/buffer">buffer</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html"><span class="identifier">ByteArray</span></a><span class="symbol">?</span><span class="symbol">)</span></code><br/>
+<code><span class="identifier">ParcelOutput</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.ByteArray, kotlin.Int)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.ByteArray, kotlin.Int)/buffer">buffer</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html"><span class="identifier">ByteArray</span></a><span class="symbol">?</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$<init>(android.os.Parcel, kotlin.ByteArray, kotlin.Int)/maxBufferSize">maxBufferSize</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="close.html">close</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">close</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="flush.html">flush</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">flush</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="set-output-stream.html">setOutputStream</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">setOutputStream</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.kryo.ParcelOutput$setOutputStream(java.io.OutputStream)/outputStream">outputStream</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html"><span class="identifier">OutputStream</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Companion Object Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-d-e-f-a-u-l-t_-b-u-f-f-e-r.html">DEFAULT_BUFFER</a></p>
+</td>
+<td>
+<code><span class="keyword">const</span> <span class="keyword">val </span><span class="identifier">DEFAULT_BUFFER</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a></code></td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

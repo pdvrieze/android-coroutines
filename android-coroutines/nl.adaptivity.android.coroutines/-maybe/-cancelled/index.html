@@ -1,0 +1,77 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>Maybe.Cancelled - android-coroutines</title>
+<link rel="stylesheet" href="../../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../../index.html">android-coroutines</a>&nbsp;/&nbsp;<a href="../../index.html">nl.adaptivity.android.coroutines</a>&nbsp;/&nbsp;<a href="../index.html">Maybe</a>&nbsp;/&nbsp;<a href=".">Cancelled</a><br/>
+<br/>
+<h1>Cancelled</h1>
+<code><span class="keyword">object </span><span class="identifier">Cancelled</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="../index.html"><span class="identifier">Maybe</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-nothing/index.html"><span class="identifier">Nothing</span></a><span class="symbol">&gt;</span></code>
+<h3>Inherited Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="../is-ok.html">isOk</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">isOk</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html"><span class="identifier">Boolean</span></a></code>
+<p>Helper to determine whether the maybe has a value.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="flat-map.html">flatMap</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">R</span><span class="symbol">&gt;</span> <span class="identifier">flatMap</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe.Cancelled$flatMap(kotlin.Function1((kotlin.Nothing, nl.adaptivity.android.coroutines.Maybe.Cancelled.flatMap.R)))/function">function</span><span class="symbol">:</span>&nbsp;<span class="symbol">(</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-nothing/index.html"><span class="identifier">Nothing</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<span class="identifier">R</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-nothing/index.html"><span class="identifier">Nothing</span></a><span class="symbol">?</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="select.html">select</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">T</span><span class="symbol">&gt;</span> <span class="identifier">select</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe.Cancelled$select(nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T)/ok">ok</span><span class="symbol">:</span>&nbsp;<span class="identifier">T</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe.Cancelled$select(nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T)/cancelled">cancelled</span><span class="symbol">:</span>&nbsp;<span class="identifier">T</span><span class="symbol">, </span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe.Cancelled$select(nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T, nl.adaptivity.android.coroutines.Maybe.Cancelled.select.T)/error">error</span><span class="symbol">:</span>&nbsp;<span class="identifier">T</span><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">T</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Inherited Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="../flat-map.html">flatMap</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">flatMap</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">T</span><span class="symbol">?</span></code>
+<p>Flatmap the identity function. Basically this gives the value for Ok, null when cancelled or
+throws the exception for an error state.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="../on-cancelled.html">onCancelled</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">onCancelled</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe$onCancelled(nl.adaptivity.android.coroutines.Maybe.CancellationCallback)/function">function</span><span class="symbol">:</span>&nbsp;<a href="../-cancellation-callback/index.html"><span class="identifier">CancellationCallback</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">?</span></code><br/>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">R</span><span class="symbol">&gt;</span> <span class="identifier">onCancelled</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe$onCancelled(kotlin.Function1((nl.adaptivity.android.coroutines.Maybe.Cancelled, nl.adaptivity.android.coroutines.Maybe.onCancelled.R)))/function">function</span><span class="symbol">:</span>&nbsp;<span class="identifier">Cancelled</span><span class="symbol">.</span><span class="symbol">(</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<span class="identifier">R</span><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">R</span><span class="symbol">?</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="../on-error.html">onError</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="symbol">&lt;</span><span class="identifier">R</span><span class="symbol">&gt;</span> <span class="identifier">onError</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe$onError(kotlin.Function2((nl.adaptivity.android.coroutines.Maybe.Error, java.lang.Exception, nl.adaptivity.android.coroutines.Maybe.onError.R)))/function">function</span><span class="symbol">:</span>&nbsp;<a href="../-error/index.html"><span class="identifier">Error</span></a><span class="symbol">.</span><span class="symbol">(</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-exception/index.html"><span class="identifier">Exception</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<span class="identifier">R</span><span class="symbol">)</span><span class="symbol">: </span><span class="identifier">R</span><span class="symbol">?</span></code><br/>
+<code><span class="keyword">fun </span><span class="identifier">onError</span><span class="symbol">(</span><span class="identifier" id="nl.adaptivity.android.coroutines.Maybe$onError(nl.adaptivity.android.coroutines.Maybe.ErrorCallback)/function">function</span><span class="symbol">:</span>&nbsp;<a href="../-error-callback/index.html"><span class="identifier">ErrorCallback</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">?</span></code></td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>
