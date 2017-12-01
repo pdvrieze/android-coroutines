@@ -34,12 +34,7 @@ android {
 }
 
 dependencies {
-    if (rootProject.name == "android-coroutines") {
-        implementation project(':')
-    } else {
-        implementation project(':android-coroutines')
-    }
-
+    implementation project(':')
 
     implementation 'com.android.support:appcompat-v7:26.1.0'
     testImplementation 'junit:junit:4.12'
