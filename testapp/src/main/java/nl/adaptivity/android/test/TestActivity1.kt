@@ -8,6 +8,9 @@ import kotlinx.android.synthetic.main.activity_test1.*
 import nl.adaptivity.android.coroutines.Maybe
 import nl.adaptivity.android.coroutines.withActivityResult
 
+/**
+ * Version of the test activity that uses a callback rather than a coroutine.
+ */
 @SuppressLint("RestrictedApi")
 class TestActivity1 : Activity() {
 
