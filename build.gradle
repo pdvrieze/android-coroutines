@@ -50,7 +50,6 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'org.jetbrains.dokka-android'
 
-
 version = '0.6.0'
 group = 'net.devrieze'
 description = 'Library to add coroutine support for Android flow'
@@ -103,7 +102,7 @@ dependencies {
 
 task androidSourcesJar(type: Jar) {
     classifier = 'sources'
-    from android.sourceSets.main.kotlin.srcDirs
+    from android.sourceSets.main.java.srcDirs
 }
 
 kotlin {
