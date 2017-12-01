@@ -10,27 +10,33 @@ import com.esotericsoftware.kryo.io.Output
 internal class FragmentSerializer(private val context: Activity?) : Serializer<Fragment>() {
 
     override fun read(kryo: Kryo, input: Input, type: Class<Fragment>): Fragment? {
-        val result: Fragment? = when (kryo.readObject(input, KryoAndroidConstants::class.java)) {
-            KryoAndroidConstants.FRAGMENT -> {
-                val savedFragmentType:Class<*> = kryo.readClass(input).type
-                val fragmentTag = input.readString()
-                val ac = context
-                val frag = ac?.fragmentManager?.findFragmentByTag(fragmentTag)
-
-                if (! type.isAssignableFrom(savedFragmentType)) {
-                    throw ClassCastException("Saved a fragment of type ${savedFragmentType}, but asked to inflate as ${type}")
-                }
-                type.cast(frag)
-            }
-            KryoAndroidConstants.APPLICATIONCONTEXT -> type.cast(context?.applicationContext)
-            else -> null
+        val marker = kryo.readObject(input, KryoAndroidConstants::class.java)
+        val savedFragmentType:Class<*> = kryo.readClass(input).type
+        val result: Fragment? = when (marker) {
+            KryoAndroidConstants.FRAGMENTBYTAG ->
+                context?.fragmentManager?.findFragmentByTag(input.readString())
+            KryoAndroidConstants.FRAGMENTBYID ->
+                context?.fragmentManager?.findFragmentById(input.readInt())
+            else -> return null
         }
+
+        if (! type.isAssignableFrom(savedFragmentType)) {
+            throw ClassCastException("Saved a fragment of type ${savedFragmentType}, but asked to inflate as ${type}")
+        }
+        type.cast(result)
+
         return result?.also { kryo.reference(it) }
     }
 
     override fun write(kryo: Kryo, output: Output, obj: Fragment) {
-        kryo.writeObject(output, KryoAndroidConstants.FRAGMENT)
-        kryo.writeClass(output, obj.javaClass)
-        output.writeString(obj.tag)
+        if (obj.id!=0) {
+            kryo.writeObject(output, KryoAndroidConstants.FRAGMENTBYID)
+            kryo.writeClass(output, obj.javaClass)
+            output.writeInt(obj.id)
+        } else {
+            kryo.writeObject(output, KryoAndroidConstants.FRAGMENTBYTAG)
+            kryo.writeClass(output, obj.javaClass)
+            output.writeString(obj.tag)
+        }
     }
 }
