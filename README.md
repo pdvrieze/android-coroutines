@@ -6,6 +6,8 @@ Android is special. Your code can be kicked out of memory at any moment so seria
 Getting events back to the coroutine depends on your activity (actually we can use fragments instead - fragments can
 be difficult, but great here)
 
+[API documentation](https://pdvrieze.github.io/android-coroutines/android-coroutines/)
+
 ## Core features
 The system supports (using [Kryo](https://github.com/EsotericSoftware/kryo)) serialization of 
 coroutines and other functions. It knows about Kotlin and Android and will handle (accidental or 
