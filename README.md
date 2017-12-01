@@ -6,6 +6,13 @@ Android is special. Your code can be kicked out of memory at any moment so seria
 Getting events back to the coroutine depends on your activity (actually we can use fragments instead - fragments can
 be difficult, but great here)
 
+## Core features
+The system supports (using [Kryo](https://github.com/EsotericSoftware/kryo)) serialization of 
+coroutines and other functions. It knows about Kotlin and Android and will handle (accidental or 
+convenience) capture of Context and Kotlin objects. It doesn't yet support all
+Android state, in particular Fragment and View objects (which would need to be looked up through the
+context).  
+
 ## Help wanted
 This is a side-effect of my main (academic work). Any help people want to provide is more than
 welcome. In particular, the following help is more than welcome.
@@ -14,7 +21,8 @@ welcome. In particular, the following help is more than welcome.
 - More features
 - Feedback on design and API
 - Test feedback
-
+- Support presence of Fragments and Views in the capture context (referring back to the activity to)
+  resolve them.
 
 #Currently supported functionality
 ##startActivityForResult

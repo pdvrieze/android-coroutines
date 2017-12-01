@@ -11,7 +11,13 @@ internal class ContextSerializer(private val context: Context?) : Serializer<Con
 
     override fun read(kryo: Kryo, input: Input, type: Class<Context>): Context? {
         val result: Context? = when (kryo.readObject(input, KryoAndroidConstants::class.java)) {
-            KryoAndroidConstants.CONTEXT -> type.cast(context)
+            KryoAndroidConstants.CONTEXT -> {
+                val savedContextType = kryo.readClass(input).type
+                if (! type.isAssignableFrom(savedContextType)) {
+                    throw ClassCastException("Saved a context of type ${savedContextType}, but asked to inflate as ${type}")
+                }
+                type.cast(context)
+            }
             KryoAndroidConstants.APPLICATIONCONTEXT -> type.cast(context?.applicationContext)
             else -> null
         }
@@ -20,7 +26,10 @@ internal class ContextSerializer(private val context: Context?) : Serializer<Con
 
     override fun write(kryo: Kryo, output: Output, obj: Context?) {
         when (obj) {
-            is Context -> kryo.writeObject(output, KryoAndroidConstants.CONTEXT)
+            is Context -> {
+                kryo.writeObject(output, KryoAndroidConstants.CONTEXT)
+                kryo.writeClass(output, obj.javaClass)
+            }
             is Application -> kryo.writeObject(output, KryoAndroidConstants.APPLICATIONCONTEXT)
             else -> throw IllegalArgumentException("Serializing contexts only works for activity, application and service")
         }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.experimental.suspendCancellableCoroutine
  * Base class for dialog fragments that support coroutine based dialog invocation. Direct instantiation
  * probably makes no sense, subclassing is expected.
  */
-class SuspendableDialog<T>: DialogFragment() {
+open class SuspendableDialog<T>: DialogFragment() {
 
 
     private var callback: CancellableContinuation<DialogResult<T>>? = null

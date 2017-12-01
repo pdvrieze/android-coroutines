@@ -54,7 +54,7 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'org.jetbrains.dokka-android'
 
 
-version = '0.5'
+version = '0.6.0-pre'
 group = 'net.devrieze'
 description = 'Library to add coroutine support for Android flow'
 
@@ -121,7 +121,7 @@ dokka {
         url = 'https://github.com/pdvrieze/android-coroutines/tree/master/src/main/java'
         suffix = '#L'
     }
-    outputFormat = 'gfm'
+    outputFormat = 'html'
 }
 
 publishing {

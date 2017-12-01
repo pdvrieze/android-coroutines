@@ -9,7 +9,7 @@ import com.esotericsoftware.kryo.io.Output
  * Serializer for Kotlin objects that stores nothing and just retrieves the current instance from
  * the field.
  */
-internal class ObjectSerializer(kryo: Kryo, val type: Class<*>): Serializer<Any>(true, true) {
+internal class ObjectSerializer(kryo: Kryo, val type: Class<*>): Serializer<Any>(false, true) {
     /**
      * The correct way of getting an object is getting it's instance.
      */

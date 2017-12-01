@@ -2,6 +2,7 @@ package nl.adaptivity.android.kryo
 
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
+import java.lang.reflect.Modifier
 
 class KotlinObjectInstantiatorStrategy(private val fallback: InstantiatorStrategy) : InstantiatorStrategy {
 
@@ -13,10 +14,14 @@ class KotlinObjectInstantiatorStrategy(private val fallback: InstantiatorStrateg
     }
 
     override fun <T : Any?> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
-        if (type.constructors.isEmpty() && type.fields.any { it.name=="INSTANCE" }) {
+        if (type.isKObject) {
             return KotlinObjectInstantiator(type)
         } else {
             return fallback.newInstantiatorOf(type)
         }
     }
+}
+
+internal val Class<*>.isKObject: Boolean get() {
+    return Modifier.isFinal(modifiers) && constructors.isEmpty() && fields.any { it.name=="INSTANCE" && Modifier.isStatic(it.modifiers) }
 }
