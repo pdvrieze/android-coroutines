@@ -26,8 +26,8 @@ welcome. In particular, the following help is more than welcome.
 - Support presence of Fragments and Views in the capture context (referring back to the activity to)
   resolve them.
 
-#Currently supported functionality
-##startActivityForResult
+# Currently supported functionality
+## startActivityForResult
 In your activity you can use a coroutine to just get the result of invoking another one:
 
 ```kotlin
@@ -42,7 +42,7 @@ fun onButtonClick(v:View) {
 
 There are some variations of this, and the `Maybe` implementation used has many options.
 
-##`SuspendableDialog`
+## `SuspendableDialog`
 In many cases you have a dialog to get some input from the user. From yes-no questions to input of values. SuspendableDialog is
 a subclass of `DialogFragment` that provides the building blocks to have a dialog that is used in a coroutine. The actual dialog
 implementation just has to invoke `dispatchResult` with the appropriate result value and the dialog is handled. Dismissal or
