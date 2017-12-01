@@ -10,12 +10,14 @@ import kotlin.coroutines.experimental.Continuation
 open class BaseRetainedContinuationFragment<T> : Fragment() {
     private var parcelableContinuation: ParcelableContinuation<T>? = null
 
-    protected val requestCode: Int = parcelableContinuation?.requestCode ?: -1
+    protected val requestCode: Int get() = parcelableContinuation?.requestCode ?: -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         retainInstance = true
-        arguments?.getParcelable<ParcelableContinuation<T>>(KEY_ACTIVITY_CONTINUATION)?.let { parcelableContinuation = it }
+        arguments?.getParcelable<ParcelableContinuation<T>>(KEY_ACTIVITY_CONTINUATION)?.let {
+            parcelableContinuation = it
+        }
     }
 
 //    @Suppress("UNCHECKED_CAST")

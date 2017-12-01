@@ -7,7 +7,7 @@ class RetainedContinuationFragment : BaseRetainedContinuationFragment<Maybe<Inte
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when {
-            requestCode != this.requestCode -> super.onActivityResult(requestCode, resultCode, data)
+            requestCode != this.requestCode && this.requestCode!=-1 -> super.onActivityResult(requestCode, resultCode, data)
             resultCode == Activity.RESULT_OK -> dispatchResult(Maybe.Ok(data))
             resultCode == Activity.RESULT_CANCELED -> dispatchResult(Maybe.cancelled())
             else -> super.onActivityResult(requestCode, resultCode, data)
