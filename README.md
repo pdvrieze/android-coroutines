@@ -1,6 +1,6 @@
 **This library works, but it's API is not yet stable. It was developed as proof of concept, the best API (esp names) was not a core consideration.**
 
-# android-coroutines
+# android-coroutines [ ![Download](https://api.bintray.com/packages/pdvrieze/maven/android-coroutines/images/download.svg) ](https://bintray.com/pdvrieze/maven/android-coroutines/_latestVersion)
 While Android is powerful it's activity model suffers from callback hell. Kotlin coroutines are supposed to fix this, but
 Android is special. Your code can be kicked out of memory at any moment so serialization interferes with coroutines. 
 Getting events back to the coroutine depends on your activity (actually we can use fragments instead - fragments can
