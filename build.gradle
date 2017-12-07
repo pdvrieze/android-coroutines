@@ -50,7 +50,7 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'org.jetbrains.dokka-android'
 
-version = '0.6.1'
+version = '0.6.2'
 group = 'net.devrieze'
 description = 'Library to add coroutine support for Android flow'
 
