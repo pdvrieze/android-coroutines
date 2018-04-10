@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.support.annotation.RequiresApi
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 import nl.adaptivity.android.util.GrantResult
@@ -37,7 +35,7 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: A.(ActivityResult)->
 suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     return suspendCoroutine { continuation ->
         val fm = fragmentManager
-        val contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, COROUTINEFRAGMENT_RESULTCODE_START))
+        val contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, this, COROUTINEFRAGMENT_RESULTCODE_START))
 
         fm.beginTransaction().apply {
             // This shouldn't happen, but in that case remove the old continuation.
@@ -74,7 +72,7 @@ suspend fun Activity.requestPermissions(permissions: Array<String>): GrantResult
                 val grantResults = IntArray(permissions.size) { idx -> pm.checkPermission(permissions[idx], packageName) }
                 continuation.resume(GrantResult(permissions, grantResults))
             } else {
-                val fragment = RequestPermissionContinuationFragment(ParcelableContinuation(continuation, COROUTINEFRAGMENT_RESULTCODE_START))
+                val fragment = RequestPermissionContinuationFragment(ParcelableContinuation(continuation, this, COROUTINEFRAGMENT_RESULTCODE_START))
                 val fm = fragmentManager
                 fm.beginTransaction().apply {
                     fm.findFragmentByTag(RequestPermissionContinuationFragment.TAG)?.let { remove(it) }

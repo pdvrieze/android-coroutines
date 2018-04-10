@@ -6,22 +6,29 @@ import android.content.Context
 import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
-import nl.adaptivity.android.kryo.serializers.ContextSerializer
-import nl.adaptivity.android.kryo.serializers.CoroutineImplSerializer
-import nl.adaptivity.android.kryo.serializers.FragmentSerializer
-import nl.adaptivity.android.kryo.serializers.ObjectSerializer
+import kotlinx.coroutines.experimental.android.HandlerContext
+import kotlinx.coroutines.experimental.android.UI
+import nl.adaptivity.android.kryo.serializers.*
+import java.lang.ref.Reference
 
 class AndroidKotlinResolver(private val context: Context?) : DefaultClassResolver() {
 
     override fun getRegistration(type: Class<*>): Registration? {
+        val c = context
         val superReg = super.getRegistration(type)
         return when {
             superReg!=null -> superReg
             type.superclass==null -> superReg
+            HandlerContext::class.java.isAssignableFrom(type) ->
+                register(Registration(type, kryo.pseudoObjectSerializer(UI), NAME))
+            c!=null && c.javaClass == type ->
+                register(Registration(type, ContextSerializer(context), NAME))
             Context::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, ContextSerializer(context), NAME))
             context is Activity && Fragment::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, FragmentSerializer(context), NAME))
+            Reference::class.java.isAssignableFrom(type) ->
+                register(Registration(type, ReferenceSerializer(kryo, type.asSubclass(Reference::class.java)), NAME))
             Function::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, FieldSerializer<Any>(kryo, type).apply { setIgnoreSyntheticFields(false) }, NAME))
             type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" ->

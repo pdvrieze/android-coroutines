@@ -1,5 +1,6 @@
 package nl.adaptivity.android.coroutines
 
+import android.app.Activity
 import android.app.Fragment
 import android.os.Bundle
 import kotlin.coroutines.experimental.Continuation
@@ -20,18 +21,28 @@ open class BaseRetainedContinuationFragment<T> : Fragment() {
         }
     }
 
-//    @Suppress("UNCHECKED_CAST")
+    override fun onAttach(activity: Activity?) {
+        super.onAttach(activity)
+        parcelableContinuation?.attachContext(activity)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        parcelableContinuation?.attachContext(activity)
+    }
+
+    //    @Suppress("UNCHECKED_CAST")
     protected fun dispatchResult(activityResult: T) {
         val cont = parcelableContinuation
         cont?.resume(activity, activityResult)
         parcelableContinuation = null
-
         // Remove this fragment, it's no longer needed
         fragmentManager.beginTransaction().remove(this).commit()
+
     }
 
     fun setContinuation(continuation: Continuation<T>) {
-        setContinuation(ParcelableContinuation<T>(continuation))
+        setContinuation(ParcelableContinuation<T>(continuation, attachedContext = activity))
     }
 
     fun setContinuation(continuation: ParcelableContinuation<T>) {

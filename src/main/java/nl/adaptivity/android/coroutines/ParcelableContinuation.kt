@@ -5,9 +5,11 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.experimental.CancellableContinuation
 import nl.adaptivity.android.kryo.kryoAndroid
 import nl.adaptivity.android.kryo.writeKryoObject
+import java.io.ByteArrayOutputStream
 import kotlin.coroutines.experimental.Continuation
 
 /**
@@ -23,12 +25,12 @@ import kotlin.coroutines.experimental.Continuation
  *                       used to match the continuation with it's start point. Currently ignored.
  * @property continuation The actual continuation that is stored/wrapped.
  */
-open class ParcelableContinuation<T> protected constructor(val requestCode: Int, protected var continuation: Any): Parcelable {
+open class ParcelableContinuation<T> protected constructor(val requestCode: Int, protected var continuation: Any, private var attachedContext: Context? = null): Parcelable {
 
     /**
      * Create a new instance for the given handler.
      */
-    constructor(handler: Continuation<T>, requestCode: Int = -1): this(requestCode, handler)
+    constructor(handler: Continuation<T>, attachedContext: Context?, requestCode: Int = -1): this(requestCode, handler, attachedContext)
 
 
     /**
@@ -60,7 +62,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
             }
         } else {
             try {
-                dest.writeKryoObject(h, kryoAndroid)
+                dest.writeKryoObject(h, kryoAndroid(attachedContext))
             } catch (e: Exception) {
                 Log.e(TAG, "Error writing continuation: ${e.message}", e)
                 throw e
@@ -115,6 +117,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
      * Helper function that does the deserialization.
      */
     private fun resolve(context: Context): Continuation<T> {
+        if (attachedContext!=context) attachContext(context)
         val h = continuation
         @Suppress("UNCHECKED_CAST")
         return when (h) {
@@ -124,6 +127,25 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
     }
 
     override fun describeContents() = 0
+
+    fun attachContext(context: Context?) {
+        val attachedContext = this.attachedContext
+        when(attachedContext) {
+            null -> this.attachedContext = context
+
+            context -> Unit // do nothing
+
+            else -> {
+                if (continuation is Continuation<*>) {
+                    val baos = ByteArrayOutputStream()
+                    Output(baos).use { out -> kryoAndroid(attachedContext).writeClassAndObject(out, continuation) }
+
+                    continuation = baos.toByteArray()
+                }
+                this.attachedContext = null
+            }
+        }
+    }
 
     /**
      * Helper for [Parcelable]

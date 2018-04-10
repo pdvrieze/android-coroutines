@@ -22,22 +22,22 @@ class TestActivity1Test {
 
     @Rule
     @JvmField
-    val mActivity1TestRule = ActivityTestRule(TestActivity1::class.java, false, false)
+    val activity1TestRule = ActivityTestRule(TestActivity1::class.java, false, false)
 
     @Rule
     @JvmField
-    val mActivity3TestRule = ActivityTestRule(TestActivity3::class.java, false, false)
+    val activity3TestRule = ActivityTestRule(TestActivity3::class.java, false, false)
 
     @Test
     @Throws(Throwable::class)
     fun testActivity1Test1() {
-        mActivity1TestRule.launchActivity(Intent())
+        activity1TestRule.launchActivity(Intent())
         run {
             // Activity 1
             launchActivity2()
         }
 
-        mActivity1TestRule.runOnUiThread { mActivity1TestRule.activity.recreate() }
+        activity1TestRule.runOnUiThread { activity1TestRule.activity.recreate() }
 
         run {
             // Activity 2
@@ -62,13 +62,13 @@ class TestActivity1Test {
     @Throws(Throwable::class)
     fun testActivity3Test1() {
         com.esotericsoftware.minlog.Log.set(com.esotericsoftware.minlog.Log.LEVEL_DEBUG)
-        mActivity3TestRule.launchActivity(Intent())
+        activity3TestRule.launchActivity(Intent())
         run {
             // in Activity 3
             launchActivity2()
         }
 
-        mActivity3TestRule.runOnUiThread { mActivity3TestRule.activity.recreate() }
+        activity3TestRule.runOnUiThread { activity3TestRule.activity.recreate() }
 
         run {
             // Activity 2
@@ -92,12 +92,12 @@ class TestActivity1Test {
     @Test
     @Throws(Throwable::class)
     fun testActivity1Test2() {
-        mActivity1TestRule.launchActivity(Intent())
+        activity1TestRule.launchActivity(Intent())
         run {
             // Activity 1
             launchActivity2()
         }
-        mActivity1TestRule.runOnUiThread { mActivity1TestRule.activity.recreate() }
+        activity1TestRule.runOnUiThread { activity1TestRule.activity.recreate() }
 
         run {
             // Activity 2

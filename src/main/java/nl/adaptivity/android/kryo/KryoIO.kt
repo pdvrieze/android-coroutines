@@ -22,7 +22,7 @@ val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceReso
  * Get a Kryo serializer that handles Android contexts special. It allows dynamic replacement of
  * markers indicating a context with the passed in context (or application context if that applies).
  */
-fun kryoAndroid(context: Context): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers() }
+fun kryoAndroid(context: Context?): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers() }
 
 /**
  * Extension function

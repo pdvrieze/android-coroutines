@@ -3,7 +3,7 @@ package nl.adaptivity.android.coroutines
 import android.app.Activity
 import android.app.DialogFragment
 import android.content.DialogInterface
-import kotlinx.coroutines.experimental.CancellableContinuation
+import android.os.Bundle
 import kotlinx.coroutines.experimental.CancellationException
 import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 
@@ -14,18 +14,23 @@ import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 open class SuspendableDialog<T>: DialogFragment() {
 
 
-    private var callback: CancellableContinuation<DialogResult<T>>? = null
+    private var callback: ParcelableContinuation<Maybe<T>>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        savedInstanceState?.getParcelable<ParcelableContinuation<Maybe<T>>>("continutation").let { callback = it }
+    }
 
     /**
      * Actually show the fragment and get the result. This requires the dialog
      * code to invoke [dispatchResult] on succesful completion.
      */
-    suspend fun show(activity: Activity, tag: String) : DialogResult<T> {
+    suspend fun show(activity: Activity, tag: String) : Maybe<T> {
         super.show(activity.fragmentManager, tag)
         val d = this
-        return suspendCancellableCoroutine<DialogResult<T>> { cont ->
-            callback?.cancel()
-            callback = cont
+        return suspendCancellableCoroutine { cont ->
+            callback?.cancel(activity)
+            callback = ParcelableContinuation(cont, activity)
         }
     }
 
@@ -38,7 +43,7 @@ open class SuspendableDialog<T>: DialogFragment() {
         super.onDismiss(dialog)
         callback?.let { callback ->
             this.callback = null // Set the property to null to prevent reinvocation
-            callback.cancel(CancellationException("Dialog dismissed"))
+            callback.cancel(activity, CancellationException("Dialog dismissed"))
         }
     }
 
@@ -51,7 +56,7 @@ open class SuspendableDialog<T>: DialogFragment() {
         super.onCancel(dialog)
         callback?.let { callback ->
             this.callback = null // Set the property to null to prevent reinvocation
-            callback.cancel(CancellationException("Dialog dismissed"))
+            callback.cancel(activity, CancellationException("Dialog dismissed"))
         }
     }
 
@@ -61,8 +66,13 @@ open class SuspendableDialog<T>: DialogFragment() {
     protected fun dispatchResult(resultValue: T) {
         callback?.let { callback ->
             this.callback = null // Set the property to null to prevent reinvocation
-            callback.resume(Maybe.Ok(resultValue))
+            callback.resume(activity, Maybe.Ok(resultValue))
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putParcelable("continutation", callback)
     }
 }
 

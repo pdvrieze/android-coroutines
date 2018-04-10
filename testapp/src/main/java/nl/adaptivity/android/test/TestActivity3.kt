@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_test1.*
 import kotlinx.coroutines.experimental.CoroutineStart
+import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import nl.adaptivity.android.coroutines.activityResult
 
@@ -27,14 +28,14 @@ class TestActivity3 : Activity() {
 
     fun onButtonClick() {
         Log.w(TAG, "Activity is: $this")
-        launch(start = CoroutineStart.UNDISPATCHED) {
+        launch(start = CoroutineStart.UNDISPATCHED, context = UI) {
             val activityResult = activityResult(Intent(this@TestActivity3, TestActivity2::class.java))
             Log.w(TAG, "Deserialised Activity is: ${this@TestActivity3}")
             val newText = activityResult.flatMap { it?.getCharSequenceExtra(TestActivity2.KEY_DATA) } ?: getString(R.string.lbl_cancelled)
             Log.w(TAG, "newText: $newText")
             val textView = findViewById<TextView>(R.id.textView)
             Log.w(TAG, "textview value: ${textView}")
-            runOnUiThread { textView.text = newText }
+            textView.text = newText
         }
     }
 

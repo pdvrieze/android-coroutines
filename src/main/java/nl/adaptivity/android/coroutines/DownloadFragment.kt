@@ -109,7 +109,7 @@ class DownloadFragment(): Fragment() {
         @Deprecated("This should be private. Use download directly instead", level = DeprecationLevel.WARNING)
         fun newInstance(continuation: Continuation<URI>): DownloadFragment {
             return DownloadFragment().apply {
-                arguments = Bundle(1).apply { putParcelable(KEY_CONTINUATION, ParcelableContinuation<URI>(continuation)) }
+                arguments = Bundle(1).apply { putParcelable(KEY_CONTINUATION, ParcelableContinuation<URI>(continuation, activity)) }
             }
         }
 
