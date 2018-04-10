@@ -17,10 +17,10 @@
 buildscript {
     ext {
         if (!has('androidPluginVersion')) {
-            androidPluginVersion = '3.0.1'
+            androidPluginVersion = '3.1.1'
         }
         if (!has('kotlin_version')) {
-            kotlin_version = '1.2.0'
+            kotlin_version = '1.2.30'
         }
     }
     repositories {
@@ -31,7 +31,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath "com.android.tools.build:gradle:${androidPluginVersion}"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
         classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.15"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0"
@@ -50,19 +50,16 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'org.jetbrains.dokka-android'
 
-version = '0.6.2'
+version = '0.6.3'
 group = 'net.devrieze'
 description = 'Library to add coroutine support for Android flow'
 
 ext {
     if (!rootProject.hasProperty('androidTarget')) {
-        androidTarget = 26
+        androidTarget = 27
     }
     if (!rootProject.hasProperty('androidCompatVersion')) {
-        androidCompatVersion = androidTarget == 25 ? '25.3.1' : (26 ? '26.1.0' : '27.0.2' )
-    }
-    if (!rootProject.hasProperty('androidBuildToolsVersion')) {
-        androidBuildToolsVersion = '27.0.2'
+        androidCompatVersion = '27.1.1'
     }
 }
 
@@ -73,12 +70,11 @@ repositories {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.3.1'
+    gradleVersion = '4.6'
 }
 
 android {
     compileSdkVersion androidTarget
-    buildToolsVersion "${androidBuildToolsVersion}"
 
     defaultConfig {
         minSdkVersion 14
@@ -96,8 +92,8 @@ dependencies {
     implementation "com.android.support:support-v4:${androidCompatVersion}"
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.esotericsoftware:kryo:4.0.1'
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.20"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.22.5"
 }
 
 task androidSourcesJar(type: Jar) {
@@ -150,10 +146,13 @@ bintray {
 
         version {
             name = project.version
-            desc = 'Support 0.20 kotlin release'
+            desc = 'Update to recent Kotlinx.coroutines. Fix some bugs related to capture of magic context handling'
             released = new Date()
             vcsTag = "v$version"
         }
     }
 }
 
+bintrayUpload {
+    dependsOn(androidSourcesJar)
+}
