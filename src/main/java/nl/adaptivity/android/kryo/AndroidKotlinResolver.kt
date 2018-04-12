@@ -1,5 +1,6 @@
 package nl.adaptivity.android.kryo
 
+import android.accounts.AccountManager
 import android.app.Activity
 import android.app.Fragment
 import android.content.Context
@@ -11,7 +12,7 @@ import kotlinx.coroutines.experimental.android.UI
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference
 
-class AndroidKotlinResolver(private val context: Context?) : DefaultClassResolver() {
+open class AndroidKotlinResolver(protected val context: Context?) : DefaultClassResolver() {
 
     override fun getRegistration(type: Class<*>): Registration? {
         val c = context
@@ -31,6 +32,8 @@ class AndroidKotlinResolver(private val context: Context?) : DefaultClassResolve
                 register(Registration(type, ReferenceSerializer(kryo, type.asSubclass(Reference::class.java)), NAME))
             Function::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, FieldSerializer<Any>(kryo, type).apply { setIgnoreSyntheticFields(false) }, NAME))
+            AccountManager::class.java.isAssignableFrom(type) ->
+                register(Registration(type, AccountManagerSerializer(kryo, type, c), NAME))
             type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" ->
                 register(Registration(type, CoroutineImplSerializer(kryo, type), NAME))
             type.isKObject -> register(Registration(type, ObjectSerializer(kryo, type), NAME))
