@@ -1,6 +1,7 @@
 import com.jfrog.bintray.gradle.BintrayExtension
 import com.jfrog.bintray.gradle.BintrayUploadTask
 import groovy.lang.Closure
+import groovy.util.Node
 import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.repositories
@@ -81,6 +82,36 @@ tasks.withType<DokkaAndroidTask> {
     outputFormat = "html"
 }
 
+inline fun XmlProvider.dependencies(config: Node.() -> Unit): Unit {
+    asNode().dependencies(config)
+}
+
+inline fun Node.dependencies(config: Node.() -> Unit): Node {
+    val ch: List<Node> = children() as List<Node>
+    val node: Node = ch.firstOrNull { name == "dependencies" } ?: appendNode("dependencies")
+    return node.apply(config)
+}
+
+fun Node.dependency(spec: String, type: String = "jar", scope: String = "compile", optional: Boolean = false): Node {
+    return spec.split(':', limit = 3).run {
+        val groupId = get(0)
+        val artifactId = get(1)
+        val version = get(2)
+        dependency(groupId, artifactId, version, type, scope, optional)
+    }
+}
+
+fun Node.dependency(groupId: String, artifactId: String, version: String, type: String = "jar", scope: String = "compile", optional: Boolean = false): Node {
+    return appendNode("dependency").apply {
+        appendNode("groupId", groupId)
+        appendNode("artifactId", artifactId)
+        appendNode("version", version)
+        appendNode("type", type)
+        if (scope != "compile") appendNode("scope", scope)
+        if (optional) appendNode("optional", "true")
+    }
+}
+
 publishing {
     (publications) {
         "MyPublication"(MavenPublication::class) {
@@ -92,6 +123,15 @@ publishing {
             artifactId = "android-coroutines-appcompat"
             artifact(sourcesJar).apply {
                 classifier="sources"
+            }
+            pom {
+                withXml {
+                    dependencies {
+                        dependency("$groupId:android-coroutines:[$version]", type = "aar")
+                        dependency("com.android.support:appcompat-v7:$androidCompatVersion")
+                        // all other dependencies are transitive
+                    }
+                }
             }
         }
     }
