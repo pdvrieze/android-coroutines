@@ -14,7 +14,7 @@ import nl.adaptivity.android.coroutines.withActivityResult
 @SuppressLint("RestrictedApi")
 class TestActivity1 : Activity() {
 
-    val resultHandler2: TestActivity1.(Maybe<Intent?>) -> Unit = { result ->
+    private val resultHandler2: TestActivity1.(Maybe<Intent?>) -> Unit = { result ->
         result.onOk { data -> textView.text = data?.getCharSequenceExtra(TestActivity2.KEY_DATA)}
         result.onCancelled { textView.text = getString(R.string.lbl_cancelled) }
     }

@@ -10,8 +10,8 @@ class RequestPermissionContinuationFragment : BaseRetainedContinuationFragment<G
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when {
             requestCode != this.requestCode -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            grantResults.isEmpty() || grantResults.all { it==PackageManager.PERMISSION_DENIED } -> dispatchResult(null)
-            else -> dispatchResult(GrantResult(permissions, grantResults))
+            grantResults.isEmpty() || grantResults.all { it==PackageManager.PERMISSION_DENIED } -> dispatchResult(null, requestCode)
+            else -> dispatchResult(GrantResult(permissions, grantResults), requestCode)
         }
     }
 

@@ -1,12 +1,16 @@
 package nl.adaptivity.android.coroutines
 
+import android.accounts.Account
 import android.app.Activity
+import android.app.Fragment
 import android.app.FragmentManager
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.IdRes
 import android.support.annotation.RequiresApi
+import android.support.annotation.RequiresPermission
 import android.view.View
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.coroutines.experimental.*
@@ -27,18 +31,23 @@ fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
     return async(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
-class ActivityCoroutineScopeWrapper<out A : Activity>(private val parent: CoroutineScope) : ActivityCoroutineScope<A> {
+private abstract class LayoutContainerScopeWrapper<out A:Activity>(private val parent: CoroutineScope): LayoutContainerCoroutineScope<A> {
+
+    override val context: CoroutineContext get() = parent.context
+    override val isActive: Boolean get() = parent.isActive
 
     override val containerView: View?
         get() = activity.window.decorView
 
+    @Suppress("UNCHECKED_CAST")
     override val activity: A
         get() {
+            // This is unsafe, but on creation the right activity should be set
             return coroutineContext.get(ActivityContext)?.activity as A
         }
+}
 
-    override val context: CoroutineContext get() = parent.context
-    override val isActive: Boolean get() = parent.isActive
+private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) : LayoutContainerScopeWrapper<A>(parent), ActivityCoroutineScope<A> {
 
 
     /**
@@ -46,16 +55,25 @@ class ActivityCoroutineScopeWrapper<out A : Activity>(private val parent: Corout
      */
     override suspend fun startActivityForResult(intent: Intent): ActivityResult {
         return suspendCoroutine { continuation ->
-            val fm = activity.fragmentManager
-            val contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, activity, COROUTINEFRAGMENT_RESULTCODE_START))
+            val fm = fragmentManager
+            val existingFragment = fm.findFragmentByTag(RetainedContinuationFragment.TAG) as RetainedContinuationFragment?
+            val contFragment: RetainedContinuationFragment
 
-            fm.beginTransaction().apply {
-                // This shouldn't happen, but in that case remove the old continuation.
-                fm.findFragmentByTag(RetainedContinuationFragment.TAG)?.let { remove(it) }
+            if (existingFragment!=null) {
+                existingFragment.addContinuation(ParcelableContinuation(continuation, activity, COROUTINEFRAGMENT_RESULTCODE_START))
+                contFragment = existingFragment
+            } else {
 
-                add(contFragment, RetainedContinuationFragment.TAG)
-            }.commit()
+                contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, activity, COROUTINEFRAGMENT_RESULTCODE_START))
 
+
+                fm.beginTransaction().apply {
+                    // This shouldn't happen, but in that case remove the old continuation.
+                    existingFragment?.let { remove(it) }
+
+                    add(contFragment, RetainedContinuationFragment.TAG)
+                }.commit()
+            }
 
             activity.runOnUiThread {
                 fm.executePendingTransactions()
@@ -77,9 +95,23 @@ class ActivityContext<A : Activity>(activity: A) : AbstractCoroutineContextEleme
 
 }
 
-interface ActivityCoroutineScope<out A : Activity> : CoroutineScope, LayoutContainer {
+interface ContextedCoroutineScope<out C: Context>: CoroutineScope {
+    fun getAndroidContext(): C
+
+    suspend fun Account.hasFeatures(features: Array<String?>) = accountHasFeaturesImpl(this, features)
+}
+
+interface LayoutContainerCoroutineScope<out A: Activity>: ContextedCoroutineScope<A>, LayoutContainer {
     val activity: A
-    val fragmentManager: FragmentManager get() = activity.fragmentManager
+    val fragmentManager: FragmentManager
+
+    override fun getAndroidContext() = activity
+
+    fun <T:View> findViewById(@IdRes id: Int):T? = containerView?.findViewById(id)
+
+    @RequiresPermission("android.permission.USE_CREDENTIALS")
+    suspend fun Account.getAuthToken(authTokenType: String, options: Bundle? = null) =
+            getAuthToken(this, authTokenType, options)
 
     suspend fun startActivityForResult(intent: Intent): ActivityResult
 
@@ -87,8 +119,16 @@ interface ActivityCoroutineScope<out A : Activity> : CoroutineScope, LayoutConta
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     fun startActivity(intent: Intent, options: Bundle) = activity.startActivity(intent, options)
+}
 
-    fun <T:View> findViewById(@IdRes id: Int):T = activity.window.findViewById(id)
+interface FragmentCoroutineScope<F:Fragment>: LayoutContainerCoroutineScope<Activity> {
+    val fragment: F
+
+}
+
+interface ActivityCoroutineScope<out A : Activity> : LayoutContainerCoroutineScope<A> {
+
+    override val fragmentManager: FragmentManager get() = activity.fragmentManager
 }
 
 
