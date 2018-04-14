@@ -45,9 +45,6 @@ private abstract class LayoutContainerScopeWrapper<out A:Activity>(private val p
             // This is unsafe, but on creation the right activity should be set
             return coroutineContext.get(ActivityContext)?.activity as A
         }
-}
-
-private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) : LayoutContainerScopeWrapper<A>(parent), ActivityCoroutineScope<A> {
 
 
     /**
@@ -58,13 +55,15 @@ private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineS
             val fm = fragmentManager
             val existingFragment = fm.findFragmentByTag(RetainedContinuationFragment.TAG) as RetainedContinuationFragment?
             val contFragment: RetainedContinuationFragment
+            val resultCode: Int
 
             if (existingFragment!=null) {
-                existingFragment.addContinuation(ParcelableContinuation(continuation, activity, COROUTINEFRAGMENT_RESULTCODE_START))
+                resultCode = existingFragment.lastResultCode+1
+                existingFragment.addContinuation(ParcelableContinuation(continuation, activity, resultCode))
                 contFragment = existingFragment
             } else {
-
-                contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, activity, COROUTINEFRAGMENT_RESULTCODE_START))
+                resultCode = COROUTINEFRAGMENT_RESULTCODE_START
+                contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, activity, resultCode))
 
 
                 fm.beginTransaction().apply {
@@ -77,10 +76,26 @@ private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineS
 
             activity.runOnUiThread {
                 fm.executePendingTransactions()
-                contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
+                contFragment.startActivityForResult(intent, resultCode)
             }
         }
     }
+
+}
+
+private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
+        LayoutContainerScopeWrapper<A>(parent), ActivityCoroutineScope<A> {
+
+
+}
+
+private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) : LayoutContainerScopeWrapper<Activity>(parent), FragmentCoroutineScope<F> {
+    @Suppress("UNCHECKED_CAST")
+    override val fragment: F
+        get() = activity.fragmentManager.findFragmentByTag(tag) as F
+
+    override val fragmentManager: FragmentManager
+        get() = fragment.fragmentManager
 
 }
 
@@ -121,7 +136,7 @@ interface LayoutContainerCoroutineScope<out A: Activity>: ContextedCoroutineScop
     fun startActivity(intent: Intent, options: Bundle) = activity.startActivity(intent, options)
 }
 
-interface FragmentCoroutineScope<F:Fragment>: LayoutContainerCoroutineScope<Activity> {
+interface FragmentCoroutineScope<out F:Fragment>: LayoutContainerCoroutineScope<Activity> {
     val fragment: F
 
 }
