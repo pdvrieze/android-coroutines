@@ -9,6 +9,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
 import kotlinx.coroutines.experimental.android.HandlerContext
 import kotlinx.coroutines.experimental.android.UI
+import nl.adaptivity.android.coroutines.ActivityContext
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference
 
@@ -22,6 +23,8 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
             type.superclass==null -> superReg
             HandlerContext::class.java.isAssignableFrom(type) ->
                 register(Registration(type, kryo.pseudoObjectSerializer(UI), NAME))
+            ActivityContext.Key::class.java == type ->
+                register(Registration(type, kryo.pseudoObjectSerializer(ActivityContext.Key), NAME))
             c!=null && c.javaClass == type ->
                 register(Registration(type, ContextSerializer(context), NAME))
             Context::class.java.isAssignableFrom(type.superclass) ->
@@ -36,6 +39,8 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
                 register(Registration(type, AccountManagerSerializer(kryo, type, c), NAME))
             type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" ->
                 register(Registration(type, CoroutineImplSerializer(kryo, type), NAME))
+// Requires the reflection library
+//            type.kotlin.isCompanion -> register(Registration(type, kryo.pseudoObjectSerializer(type.kotlin.objectInstance), NAME))
             type.isKObject -> register(Registration(type, ObjectSerializer(kryo, type), NAME))
             else -> null
         }

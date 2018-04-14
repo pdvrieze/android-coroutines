@@ -1,5 +1,6 @@
 package nl.adaptivity.android.coroutines
 
+import android.app.Activity
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
@@ -118,12 +119,21 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
      */
     private fun resolve(context: Context): Continuation<T> {
         if (attachedContext!=context) attachContext(context)
+
         val h = continuation
-        @Suppress("UNCHECKED_CAST")
-        return when (h) {
+
+        val continuation = when (h) {
             is ByteArray -> (kryoAndroid(context).readClassAndObject(Input(h)) as Continuation<T>).also { continuation = it }
             else -> h as Continuation<T>
         }
+
+        when (context) {
+            is Activity -> (continuation.context[ActivityContext] as ActivityContext<Activity>?)?.run { activity = context }
+        }
+
+
+        @Suppress("UNCHECKED_CAST")
+        return continuation
     }
 
     override fun describeContents() = 0

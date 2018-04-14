@@ -90,9 +90,10 @@ android {
 
 dependencies {
     implementation "com.android.support:support-v4:${androidCompatVersion}"
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
     implementation 'com.esotericsoftware:kryo:4.0.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+//    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:0.22.5"
 }
 
@@ -105,6 +106,10 @@ kotlin {
     experimental {
         coroutines "enable"
     }
+}
+
+androidExtensions {
+    experimental = true
 }
 
 dokka {

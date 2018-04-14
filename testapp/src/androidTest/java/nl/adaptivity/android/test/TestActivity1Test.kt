@@ -28,65 +28,27 @@ class TestActivity1Test {
     @JvmField
     val activity3TestRule = ActivityTestRule(TestActivity3::class.java, false, false)
 
+    @Rule
+    @JvmField
+    val activity4TestRule = ActivityTestRule(TestActivity4::class.java, false, false)
+
     @Test
     @Throws(Throwable::class)
     fun testActivity1Test1() {
-        activity1TestRule.launchActivity(Intent())
-        run {
-            // Activity 1
-            launchActivity2()
-        }
-
-        activity1TestRule.runOnUiThread { activity1TestRule.activity.recreate() }
-
-        run {
-            // Activity 2
-            activity2EnterText()
-
-            val button = onView(allOf<View>(withId(R.id.button2), withText("Submit"), isDisplayed()))
-            button.perform(click())
-
-        }
-
-        run {
-
-            checkRestored()
-
-            val textView2 = onView(allOf<View>(withId(R.id.textView), isDisplayed()))
-            textView2.check(matches(withText("ghgh")))
-        }
+        textActivity(activity1TestRule)
 
     }
 
     @Test
     @Throws(Throwable::class)
     fun testActivity3Test1() {
-        com.esotericsoftware.minlog.Log.set(com.esotericsoftware.minlog.Log.LEVEL_DEBUG)
-        activity3TestRule.launchActivity(Intent())
-        run {
-            // in Activity 3
-            launchActivity2()
-        }
+        textActivity(activity3TestRule)
+    }
 
-        activity3TestRule.runOnUiThread { activity3TestRule.activity.recreate() }
-
-        run {
-            // Activity 2
-            activity2EnterText()
-
-            val button = onView(allOf<View>(withId(R.id.button2), withText("Submit"), isDisplayed()))
-            button.perform(click())
-
-        }
-
-        run {
-
-            checkRestored()
-
-            val textView2 = onView(allOf<View>(withId(R.id.textView), isDisplayed()))
-            textView2.check(matches(withText("ghgh")))
-        }
-
+    @Test
+    @Throws(Throwable::class)
+    fun testActivity4Test1() {
+        textActivity(activity4TestRule)
     }
 
     @Test
@@ -113,6 +75,33 @@ class TestActivity1Test {
             textView2.check(matches(withText("Cancelled")))
         }
 
+    }
+
+    private fun textActivity(testRule: ActivityTestRule<*>) {
+        testRule.launchActivity(Intent())
+        run {
+            // Activity 1
+            launchActivity2()
+        }
+
+        testRule.runOnUiThread { testRule.activity.recreate() }
+
+        run {
+            // Activity 2
+            activity2EnterText()
+
+            val button = onView(allOf<View>(withId(R.id.button2), withText("Submit"), isDisplayed()))
+            button.perform(click())
+
+        }
+
+        run {
+
+            checkRestored()
+
+            val textView2 = onView(allOf<View>(withId(R.id.textView), isDisplayed()))
+            textView2.check(matches(withText("ghgh")))
+        }
     }
 
     private fun checkRestored() {
