@@ -19,10 +19,25 @@ import kotlin.coroutines.experimental.AbstractCoroutineContextElement
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.suspendCoroutine
 
-fun <A : Activity, R> A.aLaunch(context: CoroutineContext, start: CoroutineStart, parent: Job? = null, block: suspend ActivityCoroutineScope<A>.() -> R): Job {
+/**
+ * Verion of the launch function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [launch].
+ */
+fun <A : Activity, R> A.aLaunch(context: CoroutineContext = DefaultDispatcher,
+                                start: CoroutineStart = CoroutineStart.DEFAULT,
+                                parent: Job? = null,
+                                block: suspend ActivityCoroutineScope<A>.() -> R): Job {
     return launch(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
+/**
+ * Verion of the async function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [async].
+ */
 fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
                                start: CoroutineStart = CoroutineStart.DEFAULT,
                                parent: Job? = null,
@@ -31,7 +46,34 @@ fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
     return async(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
-private abstract class LayoutContainerScopeWrapper<out A:Activity>(private val parent: CoroutineScope): LayoutContainerCoroutineScope<A> {
+/**
+ * Verion of the launch function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [launch].
+ */
+fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
+                                start: CoroutineStart = CoroutineStart.DEFAULT,
+                                parent: Job? = null,
+                                block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Job {
+    return launch(context + ActivityContext(activity), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+}
+
+/**
+ * Verion of the async function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [async].
+ */
+fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
+                               start: CoroutineStart = CoroutineStart.DEFAULT,
+                               parent: Job? = null,
+                               block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Deferred<R> {
+
+    return async(context + ActivityContext(activity), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+}
+
+abstract class LayoutContainerScopeWrapper<out A : Activity>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A> {
 
     override val context: CoroutineContext get() = parent.context
     override val isActive: Boolean get() = parent.isActive
@@ -57,8 +99,8 @@ private abstract class LayoutContainerScopeWrapper<out A:Activity>(private val p
             val contFragment: RetainedContinuationFragment
             val resultCode: Int
 
-            if (existingFragment!=null) {
-                resultCode = existingFragment.lastResultCode+1
+            if (existingFragment != null) {
+                resultCode = existingFragment.lastResultCode + 1
                 existingFragment.addContinuation(ParcelableContinuation(continuation, activity, resultCode))
                 contFragment = existingFragment
             } else {
@@ -89,7 +131,8 @@ private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineS
 
 }
 
-private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) : LayoutContainerScopeWrapper<Activity>(parent), FragmentCoroutineScope<F> {
+private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) :
+        LayoutContainerScopeWrapper<Activity>(parent), FragmentCoroutineScope<F, Activity> {
     @Suppress("UNCHECKED_CAST")
     override val fragment: F
         get() = activity.fragmentManager.findFragmentByTag(tag) as F
@@ -110,19 +153,19 @@ class ActivityContext<A : Activity>(activity: A) : AbstractCoroutineContextEleme
 
 }
 
-interface ContextedCoroutineScope<out C: Context>: CoroutineScope {
+interface ContextedCoroutineScope<out C : Context> : CoroutineScope {
     fun getAndroidContext(): C
 
     suspend fun Account.hasFeatures(features: Array<String?>) = accountHasFeaturesImpl(this, features)
 }
 
-interface LayoutContainerCoroutineScope<out A: Activity>: ContextedCoroutineScope<A>, LayoutContainer {
+interface LayoutContainerCoroutineScope<out A : Activity> : ContextedCoroutineScope<A>, LayoutContainer {
     val activity: A
     val fragmentManager: FragmentManager
 
     override fun getAndroidContext() = activity
 
-    fun <T:View> findViewById(@IdRes id: Int):T? = containerView?.findViewById(id)
+    fun <T : View> findViewById(@IdRes id: Int): T? = containerView?.findViewById(id)
 
     @RequiresPermission("android.permission.USE_CREDENTIALS")
     suspend fun Account.getAuthToken(authTokenType: String, options: Bundle? = null) =
@@ -136,7 +179,7 @@ interface LayoutContainerCoroutineScope<out A: Activity>: ContextedCoroutineScop
     fun startActivity(intent: Intent, options: Bundle) = activity.startActivity(intent, options)
 }
 
-interface FragmentCoroutineScope<out F:Fragment>: LayoutContainerCoroutineScope<Activity> {
+interface FragmentCoroutineScope<out F : Fragment, A : Activity> : LayoutContainerCoroutineScope<A> {
     val fragment: F
 
 }
@@ -149,7 +192,7 @@ interface ActivityCoroutineScope<out A : Activity> : LayoutContainerCoroutineSco
 
 inline suspend fun <reified A> ActivityCoroutineScope<*>.startActivityForResult() = startActivityForResult(Intent(activity, A::class.java))
 
-inline fun <reified A> Activity.startActivityForResult(requestCode:Int) = this.startActivityForResult(Intent(this, A::class.java), requestCode)
+inline fun <reified A> Activity.startActivityForResult(requestCode: Int) = this.startActivityForResult(Intent(this, A::class.java), requestCode)
 
 inline fun <reified A> Activity.startActivity() = startActivity(Intent(this, A::class.java))
 

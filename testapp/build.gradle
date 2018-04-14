@@ -34,7 +34,7 @@ android {
 }
 
 dependencies {
-    implementation project(':')
+    implementation project(':core')
 
     implementation "com.android.support:appcompat-v7:${androidCompatVersion}"
     testImplementation 'junit:junit:4.12'
