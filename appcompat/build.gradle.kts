@@ -22,6 +22,7 @@ plugins {
 val androidCompatVersion:String by rootProject
 val androidTarget:Int by rootProject
 val myVersion:String by project
+val kotlinVersion:String by project
 
 version = myVersion
 group = "net.devrieze"
@@ -57,7 +58,7 @@ dependencies {
     implementation("com.android.support:appcompat-v7:$androidCompatVersion")
 
     implementation(kotlin("stdlib"))
-    implementation(kotlin("android-extensions-runtime", "1.2.31"))
+    implementation(kotlin("android-extensions-runtime", kotlinVersion))
 
     api(project(":core"))
 }
