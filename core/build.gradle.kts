@@ -20,7 +20,9 @@ plugins {
     id("org.jetbrains.dokka-android")
 }
 
-version = "0.6.3"
+val myVersion:String by project
+
+version = myVersion
 group = "net.devrieze"
 description = "Library to add coroutine support for Android flow"
 

@@ -21,8 +21,9 @@ plugins {
 
 val androidCompatVersion:String by rootProject
 val androidTarget:Int by rootProject
+val myVersion:String by project
 
-version = "0.6.3"
+version = myVersion
 group = "net.devrieze"
 description = "Extension for android coroutines that supports the appcompat library"
 

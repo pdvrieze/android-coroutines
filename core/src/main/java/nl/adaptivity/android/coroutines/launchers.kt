@@ -52,6 +52,35 @@ fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
  *
  * The function works analogous to [launch].
  */
+fun <R> launch(applicationContext: Context,
+               context: CoroutineContext = DefaultDispatcher,
+               start: CoroutineStart = CoroutineStart.DEFAULT,
+               parent: Job? = null,
+               block: suspend ContextedCoroutineScope<Context>.() -> R): Job {
+    return launch(context + ApplicationContext(applicationContext), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+}
+
+/**
+ * Verion of the async function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [async].
+ */
+fun <R> async(applicationContext: Context,
+              context: CoroutineContext = DefaultDispatcher,
+              start: CoroutineStart = CoroutineStart.DEFAULT,
+              parent: Job? = null,
+              block: suspend ContextedCoroutineScope<Context>.() -> R): Deferred<R> {
+
+    return async(context + ApplicationContext(applicationContext), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+}
+
+/**
+ * Verion of the launch function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [launch].
+ */
 fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
                                 start: CoroutineStart = CoroutineStart.DEFAULT,
                                 parent: Job? = null,
@@ -125,6 +154,15 @@ abstract class LayoutContainerScopeWrapper<out A : Activity>(private val parent:
 
 }
 
+private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope):
+    ContextedCoroutineScope<Context> {
+    override val context: CoroutineContext get() = parent.context
+    override val isActive: Boolean get() = parent.isActive
+    override fun getAndroidContext(): Context {
+        return coroutineContext[ApplicationContext]!!.applicationContext
+    }
+}
+
 private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
         LayoutContainerScopeWrapper<A>(parent), ActivityCoroutineScope<A> {
 
@@ -151,6 +189,15 @@ class ActivityContext<A : Activity>(activity: A) : AbstractCoroutineContextEleme
 
     override fun toString(): String = "ActivityContext"
 
+}
+
+class ApplicationContext(applicationContext: Context): AbstractCoroutineContextElement(ApplicationContext) {
+    var applicationContext: Context = applicationContext.applicationContext
+        internal set
+
+    companion object Key:CoroutineContext.Key<ApplicationContext>
+
+    override fun toString(): String = "ApplicationContext"
 }
 
 interface ContextedCoroutineScope<out C : Context> : CoroutineScope {
