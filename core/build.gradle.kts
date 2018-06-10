@@ -11,9 +11,6 @@ import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import java.util.Date
 import java.net.URL
 
-val androidCompatVersion get() = rootProject.extra["androidCompatVersion"] as String
-val kotlinVersion: String get() = rootProject.extra["kotlinVersion"] as String
-
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -27,23 +24,26 @@ version = "0.6.3"
 group = "net.devrieze"
 description = "Library to add coroutine support for Android flow"
 
+
+val androidCompatVersion: String by project
+val kotlinVersion: String by project
+val kryoVersion: String by project
+val androidTarget: Int by project
+val coroutinesVersion: String by project
+
 repositories {
     mavenLocal()
     jcenter()
     google()
 }
 
-task("wrapper", Wrapper::class) {
-    gradleVersion = "4.6"
-}
-
 
 android {
-    compileSdkVersion(27)
+    compileSdkVersion(androidTarget)
 
     defaultConfig {
         minSdkVersion(14)
-        targetSdkVersion(27)
+        targetSdkVersion(androidTarget)
         versionName = version as String
     }
 
@@ -55,11 +55,11 @@ android {
 
 dependencies {
     implementation("com.android.support:support-v4:$androidCompatVersion")
-    implementation("com.esotericsoftware:kryo:4.0.1")
+    implementation("com.esotericsoftware:kryo:$kryoVersion")
     implementation(kotlin("stdlib"))
     implementation(kotlin("android-extensions-runtime", kotlinVersion))
 
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-android:0.22.5")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
 }
 
 val sourcesJar = task("androidSourcesJar", Jar::class) {

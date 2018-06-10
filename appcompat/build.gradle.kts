@@ -10,8 +10,6 @@ import org.jetbrains.dokka.gradle.LinkMapping
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import java.util.Date
 
-val androidCompatVersion = rootProject.extra["androidCompatVersion"] as String
-
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -20,6 +18,9 @@ plugins {
     id("com.jfrog.bintray")
     id("org.jetbrains.dokka-android")
 }
+
+val androidCompatVersion:String by rootProject
+val androidTarget:Int by rootProject
 
 version = "0.6.3"
 group = "net.devrieze"
@@ -37,11 +38,11 @@ task("wrapper", Wrapper::class) {
 
 
 android {
-    compileSdkVersion(27)
+    compileSdkVersion(androidTarget)
 
     defaultConfig {
         minSdkVersion(14)
-        targetSdkVersion(27)
+        targetSdkVersion(androidTarget)
         versionName = version as String
     }
 

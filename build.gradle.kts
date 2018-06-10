@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinAndroidPluginWrapper
+import org.gradle.api.tasks.wrapper.Wrapper
 
 /*
  * Copyright (c) 2016.
@@ -17,19 +17,14 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinAndroidPluginWrapper
  */
 
 val androidCompatVersion: String by extra("27.1.1")
-val androidTarget: Int by extra(27)
-val kotlinVersion: String by extra("1.2.31")
+val androidTarget: Int by extra(28)
 
 plugins {
-    base
+    id("com.android.library") apply false
 
-    val kotlinVersion: String = "1.2.31"
+    kotlin("android") apply false
+}
 
-    id("com.android.application") version "3.1.1" apply false
-    kotlin("android") version kotlinVersion apply false
-
-    id("kotlin-android-extensions") version kotlinVersion apply false
-    id("com.jfrog.bintray") version "1.8.0" apply false
-
-    id("org.jetbrains.dokka-android") version "0.9.16" apply false
+task("wrapper", Wrapper::class) {
+    gradleVersion = "4.8"
 }
