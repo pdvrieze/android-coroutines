@@ -20,7 +20,7 @@ import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
- * Verion of the launch function for android usage. It provides convenience access to context objects
+ * Version of the launch function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [launch].
@@ -28,12 +28,12 @@ import kotlin.coroutines.experimental.suspendCoroutine
 fun <A : Activity, R> A.aLaunch(context: CoroutineContext = DefaultDispatcher,
                                 start: CoroutineStart = CoroutineStart.DEFAULT,
                                 parent: Job? = null,
-                                block: suspend ActivityCoroutineScope<A>.() -> R): Job {
+                                block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
     return launch(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
 /**
- * Verion of the async function for android usage. It provides convenience access to context objects
+ * Version of the async function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [async].
@@ -41,13 +41,42 @@ fun <A : Activity, R> A.aLaunch(context: CoroutineContext = DefaultDispatcher,
 fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
                                start: CoroutineStart = CoroutineStart.DEFAULT,
                                parent: Job? = null,
-                               block: suspend ActivityCoroutineScope<A>.() -> R): Deferred<R> {
+                               block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
 
     return async(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
 /**
- * Verion of the launch function for android usage. It provides convenience access to context objects
+ * Version of the launch function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [launch].
+ */
+fun <A : Activity, R> ActivityCoroutineScope<A, *>.aLaunch(context: CoroutineContext = DefaultDispatcher,
+                                                           start: CoroutineStart = CoroutineStart.DEFAULT,
+                                                           parent: Job? = null,
+                                                           block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
+    return kotlinx.coroutines.experimental.launch(context + coroutineContext[ActivityContext]!!, start, parent) {
+        ActivityCoroutineScopeWrapper<A>(this@launch).block()
+    }
+}
+
+/**
+ * Version of the async function for android usage. It provides convenience access to context objects
+ * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+ *
+ * The function works analogous to [async].
+ */
+fun <A : Activity, R> ActivityCoroutineScope<A, *>.aAsync(context: CoroutineContext = DefaultDispatcher,
+                                                          start: CoroutineStart = CoroutineStart.DEFAULT,
+                                                          parent: Job? = null,
+                                                          block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
+
+    return kotlinx.coroutines.experimental.async(context + coroutineContext[ActivityContext]!!, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+}
+
+/**
+ * Version of the launch function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [launch].
@@ -56,12 +85,12 @@ fun <R> launch(applicationContext: Context,
                context: CoroutineContext = DefaultDispatcher,
                start: CoroutineStart = CoroutineStart.DEFAULT,
                parent: Job? = null,
-               block: suspend ContextedCoroutineScope<Context>.() -> R): Job {
+               block: suspend ContextedCoroutineScope<Context, *>.() -> R): Job {
     return launch(context + ApplicationContext(applicationContext), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
 }
 
 /**
- * Verion of the async function for android usage. It provides convenience access to context objects
+ * Version of the async function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [async].
@@ -70,13 +99,13 @@ fun <R> async(applicationContext: Context,
               context: CoroutineContext = DefaultDispatcher,
               start: CoroutineStart = CoroutineStart.DEFAULT,
               parent: Job? = null,
-              block: suspend ContextedCoroutineScope<Context>.() -> R): Deferred<R> {
+              block: suspend ContextedCoroutineScope<Context, *>.() -> R): Deferred<R> {
 
     return async(context + ApplicationContext(applicationContext), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
 }
 
 /**
- * Verion of the launch function for android usage. It provides convenience access to context objects
+ * Version of the launch function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [launch].
@@ -89,7 +118,7 @@ fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
 }
 
 /**
- * Verion of the async function for android usage. It provides convenience access to context objects
+ * Version of the async function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
  *
  * The function works analogous to [async].
@@ -102,7 +131,7 @@ fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
     return async(context + ActivityContext(activity), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
 }
 
-abstract class LayoutContainerScopeWrapper<out A : Activity>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A> {
+abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
 
     override val context: CoroutineContext get() = parent.context
     override val isActive: Boolean get() = parent.isActive
@@ -154,23 +183,47 @@ abstract class LayoutContainerScopeWrapper<out A : Activity>(private val parent:
 
 }
 
-private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope):
-    ContextedCoroutineScope<Context> {
+private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
+        ContextedCoroutineScope<Context, ApplicationCoroutineScopeWrapper> {
     override val context: CoroutineContext get() = parent.context
     override val isActive: Boolean get() = parent.isActive
     override fun getAndroidContext(): Context {
         return coroutineContext[ApplicationContext]!!.applicationContext
     }
+
+
+    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Job {
+        coroutineContext[ApplicationContext]!!.let { appContext ->
+            return kotlinx.coroutines.experimental.launch(context + appContext, start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+        }
+    }
+
+    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Deferred<R> {
+        coroutineContext[ApplicationContext]!!.let { appContext ->
+            return kotlinx.coroutines.experimental.async(context + appContext, start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+        }
+    }
+
 }
 
 private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
-        LayoutContainerScopeWrapper<A>(parent), ActivityCoroutineScope<A> {
+        LayoutContainerScopeWrapper<A, ActivityCoroutineScopeWrapper<A>>(parent), ActivityCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
 
+    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Job {
+        coroutineContext[ActivityContext]!!.let { activityContext ->
+            return kotlinx.coroutines.experimental.launch(context + activityContext, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+        }
+    }
 
+    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Deferred<R> {
+        coroutineContext[ActivityContext]!!.let { activityContext ->
+            return kotlinx.coroutines.experimental.async(context + activityContext, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+        }
+    }
 }
 
 private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) :
-        LayoutContainerScopeWrapper<Activity>(parent), FragmentCoroutineScope<F, Activity> {
+        LayoutContainerScopeWrapper<Activity, FragmentCoroutineScope<F, Activity>>(parent), FragmentCoroutineScope<F, Activity> {
     @Suppress("UNCHECKED_CAST")
     override val fragment: F
         get() = activity.fragmentManager.findFragmentByTag(tag) as F
@@ -178,6 +231,18 @@ private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineS
     override val fragmentManager: FragmentManager
         get() = fragment.fragmentManager
 
+
+    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F,Activity>.() -> R): Job {
+        coroutineContext[ActivityContext]!!.let { activityContext ->
+            return kotlinx.coroutines.experimental.launch(context + activityContext, start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+        }
+    }
+
+    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F,Activity>.() -> R): Deferred<R> {
+        coroutineContext[ActivityContext]!!.let { activityContext ->
+            return kotlinx.coroutines.experimental.async(context + activityContext, start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+        }
+    }
 }
 
 
@@ -191,22 +256,34 @@ class ActivityContext<A : Activity>(activity: A) : AbstractCoroutineContextEleme
 
 }
 
-class ApplicationContext(applicationContext: Context): AbstractCoroutineContextElement(ApplicationContext) {
+class ApplicationContext(applicationContext: Context) : AbstractCoroutineContextElement(ApplicationContext) {
     var applicationContext: Context = applicationContext.applicationContext
         internal set
 
-    companion object Key:CoroutineContext.Key<ApplicationContext>
+    companion object Key : CoroutineContext.Key<ApplicationContext>
 
     override fun toString(): String = "ApplicationContext"
 }
 
-interface ContextedCoroutineScope<out C : Context> : CoroutineScope {
+interface ContextedCoroutineScope<out C : Context, out S : ContextedCoroutineScope<C, S>> : CoroutineScope {
     fun getAndroidContext(): C
 
     suspend fun Account.hasFeatures(features: Array<String?>) = accountHasFeaturesImpl(this, features)
+
+    fun launch(context: CoroutineContext = DefaultDispatcher,
+               start: CoroutineStart = CoroutineStart.DEFAULT,
+               parent: Job? = null,
+               block: suspend S.() -> R): Job
+
+
+    fun <R> async(context: CoroutineContext = DefaultDispatcher,
+                  start: CoroutineStart = CoroutineStart.DEFAULT,
+                  parent: Job? = null,
+                  block: suspend S.() -> R): Deferred<R>
+
 }
 
-interface LayoutContainerCoroutineScope<out A : Activity> : ContextedCoroutineScope<A>, LayoutContainer {
+interface LayoutContainerCoroutineScope<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>> : ContextedCoroutineScope<A, S>, LayoutContainer {
     val activity: A
     val fragmentManager: FragmentManager
 
@@ -226,18 +303,18 @@ interface LayoutContainerCoroutineScope<out A : Activity> : ContextedCoroutineSc
     fun startActivity(intent: Intent, options: Bundle) = activity.startActivity(intent, options)
 }
 
-interface FragmentCoroutineScope<out F : Fragment, A : Activity> : LayoutContainerCoroutineScope<A> {
+interface FragmentCoroutineScope<out F : Fragment, A : Activity> : LayoutContainerCoroutineScope<A, FragmentCoroutineScope<F, A>> {
     val fragment: F
 
 }
 
-interface ActivityCoroutineScope<out A : Activity> : LayoutContainerCoroutineScope<A> {
+interface ActivityCoroutineScope<out A : Activity, out S : ActivityCoroutineScope<A, S>> : LayoutContainerCoroutineScope<A, S> {
 
     override val fragmentManager: FragmentManager get() = activity.fragmentManager
 }
 
 
-inline suspend fun <reified A> ActivityCoroutineScope<*>.startActivityForResult() = startActivityForResult(Intent(activity, A::class.java))
+inline suspend fun <reified A> ActivityCoroutineScope<*, *>.startActivityForResult() = startActivityForResult(Intent(activity, A::class.java))
 
 inline fun <reified A> Activity.startActivityForResult(requestCode: Int) = this.startActivityForResult(Intent(this, A::class.java), requestCode)
 
