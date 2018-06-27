@@ -18,6 +18,7 @@ import java.io.Serializable
 import kotlin.coroutines.experimental.AbstractCoroutineContextElement
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.suspendCoroutine
+import kotlin.internal.*
 
 /**
  * Version of the launch function for android usage. It provides convenience access to context objects
@@ -133,7 +134,12 @@ fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
 
 abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
 
-    override val context: CoroutineContext get() = parent.context
+    @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "DEPRECATION")
+    @Deprecated("Replace with top-level coroutineContext",
+            replaceWith = ReplaceWith("coroutineContext",
+                    imports = ["kotlin.coroutines.experimental.coroutineContext"]))
+    @LowPriorityInOverloadResolution
+    override val coroutineContext: CoroutineContext get() = parent.coroutineContext
     override val isActive: Boolean get() = parent.isActive
 
     override val containerView: View?
@@ -185,8 +191,16 @@ abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutConta
 
 private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
         ContextedCoroutineScope<Context, ApplicationCoroutineScopeWrapper> {
-    override val context: CoroutineContext get() = parent.context
+
+    @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "DEPRECATION")
+    @Deprecated("Replace with top-level coroutineContext",
+            replaceWith = ReplaceWith("coroutineContext",
+                    imports = ["kotlin.coroutines.experimental.coroutineContext"]))
+    @LowPriorityInOverloadResolution
+    override val coroutineContext: CoroutineContext get() = parent.coroutineContext
+
     override val isActive: Boolean get() = parent.isActive
+
     override fun getAndroidContext(): Context {
         return coroutineContext[ApplicationContext]!!.applicationContext
     }
