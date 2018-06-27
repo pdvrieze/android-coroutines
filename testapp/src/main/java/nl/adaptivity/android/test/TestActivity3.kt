@@ -12,7 +12,11 @@ import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import nl.adaptivity.android.coroutines.activityResult
 
-@SuppressLint("RestrictedApi")
+/**
+ * Implementation of an activity that uses an async launch to get a result from an activity using
+ * coroutines. It uses the standard launch function.
+ */
+//@SuppressLint("RestrictedApi")
 class TestActivity3 : Activity() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {

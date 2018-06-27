@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_test2.*
 
+/**
+ * Simple activity that has a text box that can be passed as result.
+ */
 class TestActivity2 : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
