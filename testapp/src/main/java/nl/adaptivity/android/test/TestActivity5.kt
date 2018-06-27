@@ -1,9 +1,12 @@
 package nl.adaptivity.android.test
 
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.os.Bundle
+import android.support.v4.app.Fragment
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import kotlinx.android.synthetic.main.activity_test1.*
 import kotlinx.coroutines.experimental.CoroutineStart
 import kotlinx.coroutines.experimental.android.UI
@@ -14,7 +17,7 @@ import nl.adaptivity.android.coroutines.startActivityForResult
  * Implementation of an activity that uses an async launch to get a result from an activity using
  * coroutines. It uses the "safe" launch function and a synthetic accessor for the contained views.
  */
-class TestActivity4 : Activity() {
+class TestActivity5 : AppCompatActivity() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
@@ -42,6 +45,6 @@ class TestActivity4 : Activity() {
     }
 
     companion object {
-        const val TAG="TestActivity4"
+        const val TAG="TestActivity5"
     }
 }

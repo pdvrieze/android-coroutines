@@ -49,7 +49,7 @@ suspend fun <A : Activity> LayoutContainerCoroutineScope<A, *>.getAuthToken(acco
     val resultBundle = callAccountManagerAsync<Bundle> { callback -> getAuthToken(account, authTokenType, options, false, callback, null) }
     if (resultBundle.containsKey(AccountManager.KEY_INTENT)) {
         val intent = resultBundle.get(AccountManager.KEY_INTENT) as Intent
-        val activityResult = activity.activityResult(intent)
+        val activityResult = activity().activityResult(intent)
         return activityResult.onOk { getAuthToken(account, authTokenType, options) }
     } else {
         return resultBundle.getString(AccountManager.KEY_AUTHTOKEN)
@@ -96,8 +96,9 @@ suspend inline fun <R> AccountManager.callAsync(crossinline operation: AccountMa
  * Helper function that helps with calling account manager operations asynchronously.
  */
 suspend inline fun <R> ContextedCoroutineScope<*,*>.callAccountManagerAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
-    return suspendCancellableCoroutine<R> { cont ->
-        AccountManager.get(getAndroidContext()).operation(CoroutineAccountManagerCallback(cont))
+    val androidContext = getAndroidContext()
+    return suspendCancellableCoroutine { cont ->
+        AccountManager.get(androidContext).operation(CoroutineAccountManagerCallback(cont))
     }
 }
 

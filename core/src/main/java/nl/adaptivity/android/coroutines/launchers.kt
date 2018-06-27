@@ -17,6 +17,7 @@ import kotlinx.coroutines.experimental.*
 import java.io.Serializable
 import kotlin.coroutines.experimental.AbstractCoroutineContextElement
 import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.experimental.coroutineContext as extCoroutineContext
 import kotlin.coroutines.experimental.suspendCoroutine
 import kotlin.internal.*
 
@@ -33,6 +34,7 @@ fun <A : Activity, R> A.aLaunch(context: CoroutineContext = DefaultDispatcher,
     return launch(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
+@Suppress("unused")
 /**
  * Version of the async function for android usage. It provides convenience access to context objects
  * in a safer way. The scope interface can also be the receiver of further convenience extensions.
@@ -53,11 +55,12 @@ fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
  *
  * The function works analogous to [launch].
  */
-fun <A : Activity, R> ActivityCoroutineScope<A, *>.aLaunch(context: CoroutineContext = DefaultDispatcher,
-                                                           start: CoroutineStart = CoroutineStart.DEFAULT,
-                                                           parent: Job? = null,
-                                                           block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
-    return kotlinx.coroutines.experimental.launch(context + coroutineContext[ActivityContext]!!, start, parent) {
+@Suppress("unused")
+suspend fun <A : Activity, R> ActivityCoroutineScope<A, *>.aLaunch(context: CoroutineContext = DefaultDispatcher,
+                                                                   start: CoroutineStart = CoroutineStart.DEFAULT,
+                                                                   parent: Job? = null,
+                                                                   block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
+    return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) {
         ActivityCoroutineScopeWrapper<A>(this@launch).block()
     }
 }
@@ -68,12 +71,13 @@ fun <A : Activity, R> ActivityCoroutineScope<A, *>.aLaunch(context: CoroutineCon
  *
  * The function works analogous to [async].
  */
-fun <A : Activity, R> ActivityCoroutineScope<A, *>.aAsync(context: CoroutineContext = DefaultDispatcher,
-                                                          start: CoroutineStart = CoroutineStart.DEFAULT,
-                                                          parent: Job? = null,
-                                                          block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
+@Suppress("unused")
+suspend fun <A : Activity, R> ActivityCoroutineScope<A, *>.aAsync(context: CoroutineContext = DefaultDispatcher,
+                                                                  start: CoroutineStart = CoroutineStart.DEFAULT,
+                                                                  parent: Job? = null,
+                                                                  block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
 
-    return kotlinx.coroutines.experimental.async(context + coroutineContext[ActivityContext]!!, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+    return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
 /**
@@ -111,6 +115,7 @@ fun <R> async(applicationContext: Context,
  *
  * The function works analogous to [launch].
  */
+@Suppress("DEPRECATION", "unused")
 fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
                                 start: CoroutineStart = CoroutineStart.DEFAULT,
                                 parent: Job? = null,
@@ -124,6 +129,7 @@ fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
  *
  * The function works analogous to [async].
  */
+@Suppress("DEPRECATION", "unused")
 fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
                                start: CoroutineStart = CoroutineStart.DEFAULT,
                                parent: Job? = null,
@@ -134,31 +140,48 @@ fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
 
 abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
 
+    @Suppress("UNCHECKED_CAST")
+    suspend fun activityContext(): ActivityContext<out A> = (extCoroutineContext[ActivityContext] as ActivityContext<out A>?)
+            ?: throw IllegalStateException("Missing activity context")
+
     @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "DEPRECATION")
     @Deprecated("Replace with top-level coroutineContext",
             replaceWith = ReplaceWith("coroutineContext",
                     imports = ["kotlin.coroutines.experimental.coroutineContext"]))
     @LowPriorityInOverloadResolution
-    override val coroutineContext: CoroutineContext get() = parent.coroutineContext
+    override val coroutineContext: CoroutineContext
+        get() = parent.coroutineContext
     override val isActive: Boolean get() = parent.isActive
 
+    @Deprecated("Use layoutContainer or the function variant", ReplaceWith("layoutContainer()"))
     override val containerView: View?
+        @Suppress("DEPRECATION")
         get() = activity.window.decorView
 
-    @Suppress("UNCHECKED_CAST")
+    override suspend fun containerView(): View? = activity().window.decorView
+
+    abstract suspend fun <R> layoutContainer(body: LayoutContainer.() -> R): R
+
+    @Deprecated("Use function", ReplaceWith("activity()"))
+    @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember", "DEPRECATION")
     override val activity: A
         get() {
             // This is unsafe, but on creation the right activity should be set
-            return coroutineContext.get(ActivityContext)?.activity as A
+            return coroutineContext[ActivityContext]?.activity as A
         }
 
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun activity(): A = activityContext().activity
 
     /**
      * Asynchronously invoke [Activity.startActivityForResult] returning the result on completion.
      */
     override suspend fun startActivityForResult(intent: Intent): ActivityResult {
+        val activityContext = activityContext()
         return suspendCoroutine { continuation ->
-            val fm = fragmentManager
+            val activity = activityContext.activity
+            @Suppress("DEPRECATION")
+            val fm = activityContext.activity.fragmentManager
             val existingFragment = fm.findFragmentByTag(RetainedContinuationFragment.TAG) as RetainedContinuationFragment?
             val contFragment: RetainedContinuationFragment
             val resultCode: Int
@@ -197,65 +220,88 @@ private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
             replaceWith = ReplaceWith("coroutineContext",
                     imports = ["kotlin.coroutines.experimental.coroutineContext"]))
     @LowPriorityInOverloadResolution
-    override val coroutineContext: CoroutineContext get() = parent.coroutineContext
+    override val coroutineContext: CoroutineContext
+        get() = parent.coroutineContext
 
     override val isActive: Boolean get() = parent.isActive
 
-    override fun getAndroidContext(): Context {
-        return coroutineContext[ApplicationContext]!!.applicationContext
+    @Suppress("UNCHECKED_CAST")
+    suspend fun applicationContext(): ApplicationContext = extCoroutineContext[ApplicationContext]
+            ?: throw IllegalStateException("Missing application context")
+
+    override suspend fun getAndroidContext(): Context {
+        return applicationContext().applicationContext
     }
 
 
-    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Job {
-        coroutineContext[ApplicationContext]!!.let { appContext ->
-            return kotlinx.coroutines.experimental.launch(context + appContext, start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
-        }
+    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Job {
+        return kotlinx.coroutines.experimental.launch(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
     }
 
-    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Deferred<R> {
-        coroutineContext[ApplicationContext]!!.let { appContext ->
-            return kotlinx.coroutines.experimental.async(context + appContext, start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
-        }
+    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Deferred<R> {
+        return kotlinx.coroutines.experimental.async(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
     }
 
 }
+
+private class DelegateLayoutContainer(override val containerView: View?): LayoutContainer
 
 private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
         LayoutContainerScopeWrapper<A, ActivityCoroutineScopeWrapper<A>>(parent), ActivityCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
 
-    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Job {
-        coroutineContext[ActivityContext]!!.let { activityContext ->
-            return kotlinx.coroutines.experimental.launch(context + activityContext, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
-        }
+    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Job {
+        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
     }
 
-    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Deferred<R> {
-        coroutineContext[ActivityContext]!!.let { activityContext ->
-            return kotlinx.coroutines.experimental.async(context + activityContext, start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
-        }
+    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Deferred<R> {
+        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
     }
+
+    @Suppress("unused")
+    override suspend fun <R> layoutContainer(body: LayoutContainer.() -> R): R {
+        return DelegateLayoutContainer(activity().window.decorView).body()
+    }
+
+    @Suppress("unused")
+    suspend inline fun withActivity(body: A.() -> R): R {
+        return activity().body()
+    }
+
 }
 
+@Suppress("DEPRECATION")
 private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) :
         LayoutContainerScopeWrapper<Activity, FragmentCoroutineScope<F, Activity>>(parent), FragmentCoroutineScope<F, Activity> {
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember")
     override val fragment: F
         get() = activity.fragmentManager.findFragmentByTag(tag) as F
 
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun fragment(): F {
+        return activityContext().activity.fragmentManager.findFragmentByTag(tag) as F
+    }
+
+    @Suppress("OverridingDeprecatedMember")
     override val fragmentManager: FragmentManager
         get() = fragment.fragmentManager
 
-
-    override fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F,Activity>.() -> R): Job {
-        coroutineContext[ActivityContext]!!.let { activityContext ->
-            return kotlinx.coroutines.experimental.launch(context + activityContext, start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
-        }
+    @Suppress("DEPRECATION")
+    override suspend fun fragmentManager(): FragmentManager {
+        return activityContext().activity.fragmentManager
     }
 
-    override fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F,Activity>.() -> R): Deferred<R> {
-        coroutineContext[ActivityContext]!!.let { activityContext ->
-            return kotlinx.coroutines.experimental.async(context + activityContext, start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
-        }
+    @Suppress("unused")
+    override suspend fun <R> layoutContainer(body: LayoutContainer.() -> R): R {
+        return DelegateLayoutContainer(fragment().view).body()
+    }
+
+
+    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Job {
+        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+    }
+
+    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Deferred<R> {
+        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
     }
 }
 
@@ -280,30 +326,41 @@ class ApplicationContext(applicationContext: Context) : AbstractCoroutineContext
 }
 
 interface ContextedCoroutineScope<out C : Context, out S : ContextedCoroutineScope<C, S>> : CoroutineScope {
-    fun getAndroidContext(): C
+    suspend fun getAndroidContext(): C
 
     suspend fun Account.hasFeatures(features: Array<String?>) = accountHasFeaturesImpl(this, features)
 
-    fun launch(context: CoroutineContext = DefaultDispatcher,
-               start: CoroutineStart = CoroutineStart.DEFAULT,
-               parent: Job? = null,
-               block: suspend S.() -> R): Job
+    suspend fun launch(context: CoroutineContext = DefaultDispatcher,
+                       start: CoroutineStart = CoroutineStart.DEFAULT,
+                       parent: Job? = null,
+                       block: suspend S.() -> R): Job
 
 
-    fun <R> async(context: CoroutineContext = DefaultDispatcher,
-                  start: CoroutineStart = CoroutineStart.DEFAULT,
-                  parent: Job? = null,
-                  block: suspend S.() -> R): Deferred<R>
+    suspend fun <R> async(context: CoroutineContext = DefaultDispatcher,
+                          start: CoroutineStart = CoroutineStart.DEFAULT,
+                          parent: Job? = null,
+                          block: suspend S.() -> R): Deferred<R>
 
 }
 
 interface LayoutContainerCoroutineScope<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>> : ContextedCoroutineScope<A, S>, LayoutContainer {
+    @Deprecated("Use function", ReplaceWith("activity()"))
     val activity: A
+
+    @Suppress("DEPRECATION")
+    @Deprecated("Use function", ReplaceWith("fragmentManager()"))
     val fragmentManager: FragmentManager
 
-    override fun getAndroidContext() = activity
+    suspend fun activity():A
 
-    fun <T : View> findViewById(@IdRes id: Int): T? = containerView?.findViewById(id)
+    @Suppress("DEPRECATION")
+    suspend fun fragmentManager(): FragmentManager
+
+    override suspend fun getAndroidContext() = activity()
+
+    suspend fun containerView(): View?
+
+    suspend fun <T : View> findViewById(@IdRes id: Int): T? = containerView()?.findViewById(id)
 
     @RequiresPermission("android.permission.USE_CREDENTIALS")
     suspend fun Account.getAuthToken(authTokenType: String, options: Bundle? = null) =
@@ -311,26 +368,46 @@ interface LayoutContainerCoroutineScope<out A : Activity, out S : LayoutContaine
 
     suspend fun startActivityForResult(intent: Intent): ActivityResult
 
-    fun startActivity(intent: Intent) = activity.startActivity(intent)
+    suspend fun startActivity(intent: Intent) = activity().startActivity(intent)
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
-    fun startActivity(intent: Intent, options: Bundle) = activity.startActivity(intent, options)
+    suspend fun startActivity(intent: Intent, options: Bundle) = activity().startActivity(intent, options)
 }
 
+@Suppress("DEPRECATION")
 interface FragmentCoroutineScope<out F : Fragment, A : Activity> : LayoutContainerCoroutineScope<A, FragmentCoroutineScope<F, A>> {
+    @Deprecated("Use function version")
     val fragment: F
 
+    suspend fun fragment(): F
 }
 
 interface ActivityCoroutineScope<out A : Activity, out S : ActivityCoroutineScope<A, S>> : LayoutContainerCoroutineScope<A, S> {
 
+    @Suppress("DEPRECATION", "OverridingDeprecatedMember")
     override val fragmentManager: FragmentManager get() = activity.fragmentManager
+
+    @Suppress("DEPRECATION")
+    override suspend fun fragmentManager(): FragmentManager {
+        return activityContext().activity.fragmentManager
+    }
+
+    suspend fun activityContext(): ActivityContext<out A>
 }
 
+@Suppress("unused")
+suspend inline fun <reified A> FragmentCoroutineScope<*, *>.startActivityForResult() = startActivityForResult(Intent(activity(), A::class.java))
 
-inline suspend fun <reified A> ActivityCoroutineScope<*, *>.startActivityForResult() = startActivityForResult(Intent(activity, A::class.java))
+suspend inline fun <reified A> ActivityCoroutineScope<*, *>.startActivityForResult() = startActivityForResult(Intent(activity(), A::class.java))
 
 inline fun <reified A> Activity.startActivityForResult(requestCode: Int) = this.startActivityForResult(Intent(this, A::class.java), requestCode)
 
+@Suppress("unused", "DEPRECATION")
+inline fun <reified A> Fragment.startActivityForResult(requestCode: Int) = this.startActivityForResult(Intent(activity, A::class.java), requestCode)
+
+@Suppress("unused")
 inline fun <reified A> Activity.startActivity() = startActivity(Intent(this, A::class.java))
+
+@Suppress("unused", "DEPRECATION")
+inline fun <reified A> Fragment.startActivity() = startActivity(Intent(activity, A::class.java))
 

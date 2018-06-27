@@ -32,6 +32,14 @@ class TestActivity1Test {
     @JvmField
     val activity4TestRule = ActivityTestRule(TestActivity4::class.java, false, false)
 
+    @Rule
+    @JvmField
+    val activity5TestRule = ActivityTestRule(TestActivity5::class.java, false, false)
+
+    @Rule
+    @JvmField
+    val activity6TestRule = ActivityTestRule(TestActivity6::class.java, false, false)
+
     @Test
     @Throws(Throwable::class)
     fun testActivity1Test1() {
@@ -49,6 +57,18 @@ class TestActivity1Test {
     @Throws(Throwable::class)
     fun testActivity4Test1() {
         textActivity(activity4TestRule)
+    }
+
+    @Test
+    @Throws(Throwable::class)
+    fun testActivity5Test1() {
+        textActivity(activity5TestRule)
+    }
+
+    @Test
+    @Throws(Throwable::class)
+    fun testActivity6Test1() {
+        textActivity(activity6TestRule)
     }
 
     @Test
