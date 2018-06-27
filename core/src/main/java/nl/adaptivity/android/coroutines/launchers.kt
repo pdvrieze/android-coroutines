@@ -31,16 +31,18 @@ fun <A : Activity, R> A.aLaunch(context: CoroutineContext = DefaultDispatcher,
                                 start: CoroutineStart = CoroutineStart.DEFAULT,
                                 parent: Job? = null,
                                 block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
-    return launch(context + ActivityContext(this), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+    return launch(context + ActivityContext(this), start, parent) {
+        ActivityCoroutineScopeWrapper<A>(this).block()
+    }
 }
 
 @Suppress("unused")
-/**
- * Version of the async function for android usage. It provides convenience access to context objects
- * in a safer way. The scope interface can also be the receiver of further convenience extensions.
- *
- * The function works analogous to [async].
- */
+        /**
+         * Version of the async function for android usage. It provides convenience access to context objects
+         * in a safer way. The scope interface can also be the receiver of further convenience extensions.
+         *
+         * The function works analogous to [async].
+         */
 fun <A : Activity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
                                start: CoroutineStart = CoroutineStart.DEFAULT,
                                parent: Job? = null,
@@ -120,8 +122,21 @@ fun <F : Fragment, R> F.aLaunch(context: CoroutineContext = DefaultDispatcher,
                                 start: CoroutineStart = CoroutineStart.DEFAULT,
                                 parent: Job? = null,
                                 block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Job {
-    return launch(context + ActivityContext(activity), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+    // These are local vars as we want to resolve them immediately, not in the coroutine
+    val tag = tag
+    val id = id
+
+    return launch(context + ActivityContext(activity), start, parent) {
+        createFragmentWrapper<F>(this, tag, id).block()
+    }
 }
+
+private fun <F : Fragment> createFragmentWrapper(parent: CoroutineScope, tag: String?, id:Int) =
+        when (tag) {
+            null -> FragmentCoroutineScopeWrapper<F>(parent, id)
+            else -> FragmentCoroutineScopeWrapper<F>(parent, tag)
+        }
+
 
 /**
  * Version of the async function for android usage. It provides convenience access to context objects
@@ -134,8 +149,11 @@ fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
                                start: CoroutineStart = CoroutineStart.DEFAULT,
                                parent: Job? = null,
                                block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Deferred<R> {
+    // These are local vars as we want to resolve them immediately, not in the coroutine
+    val tag = tag
+    val id = id
 
-    return async(context + ActivityContext(activity), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+    return async(context + ActivityContext(activity), start, parent) { createFragmentWrapper<F>(this, tag, id).block() }
 }
 
 abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
@@ -244,7 +262,7 @@ private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
 
 }
 
-private class DelegateLayoutContainer(override val containerView: View?): LayoutContainer
+private class DelegateLayoutContainer(override val containerView: View?) : LayoutContainer
 
 private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
         LayoutContainerScopeWrapper<A, ActivityCoroutineScopeWrapper<A>>(parent), ActivityCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
@@ -270,15 +288,21 @@ private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineS
 }
 
 @Suppress("DEPRECATION")
-private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineScope, private val tag: String) :
+private class FragmentCoroutineScopeWrapper<out F : Fragment>
+private constructor(parent: CoroutineScope, private val tag: String?, private val id: Int) :
         LayoutContainerScopeWrapper<Activity, FragmentCoroutineScope<F, Activity>>(parent), FragmentCoroutineScope<F, Activity> {
+
+    constructor(parent: CoroutineScope, tag: String): this(parent, tag, 0)
+
+    constructor(parent: CoroutineScope, id:Int): this(parent, null, id)
+
     @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember")
     override val fragment: F
-        get() = activity.fragmentManager.findFragmentByTag(tag) as F
+        get() = activity.fragmentManager.run { tag?.let{ findFragmentByTag(it) } ?: findFragmentById(id) } as F
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun fragment(): F {
-        return activityContext().activity.fragmentManager.findFragmentByTag(tag) as F
+        return activityContext().activity.fragmentManager.run { tag?.let{ findFragmentByTag(it) } ?: findFragmentById(id) } as F
     }
 
     @Suppress("OverridingDeprecatedMember")
@@ -295,13 +319,18 @@ private class FragmentCoroutineScopeWrapper<out F : Fragment>(parent: CoroutineS
         return DelegateLayoutContainer(fragment().view).body()
     }
 
+    internal fun createScopeWrapper(coroutineScope: CoroutineScope) = when (tag) {
+        null -> FragmentCoroutineScopeWrapper<F>(coroutineScope, id)
+        else -> FragmentCoroutineScopeWrapper<F>(coroutineScope, tag)
+    }
+
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
     }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { FragmentCoroutineScopeWrapper<F>(this, tag).block() }
+        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
     }
 }
 
@@ -351,7 +380,7 @@ interface LayoutContainerCoroutineScope<out A : Activity, out S : LayoutContaine
     @Deprecated("Use function", ReplaceWith("fragmentManager()"))
     val fragmentManager: FragmentManager
 
-    suspend fun activity():A
+    suspend fun activity(): A
 
     @Suppress("DEPRECATION")
     suspend fun fragmentManager(): FragmentManager
@@ -385,7 +414,8 @@ interface FragmentCoroutineScope<out F : Fragment, A : Activity> : LayoutContain
 interface ActivityCoroutineScope<out A : Activity, out S : ActivityCoroutineScope<A, S>> : LayoutContainerCoroutineScope<A, S> {
 
     @Suppress("DEPRECATION", "OverridingDeprecatedMember")
-    override val fragmentManager: FragmentManager get() = activity.fragmentManager
+    override val fragmentManager: FragmentManager
+        get() = activity.fragmentManager
 
     @Suppress("DEPRECATION")
     override suspend fun fragmentManager(): FragmentManager {

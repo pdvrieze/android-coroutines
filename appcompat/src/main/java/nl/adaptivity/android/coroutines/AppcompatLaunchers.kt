@@ -37,6 +37,14 @@ fun <A : AppCompatActivity, R> A.aAsync(context: CoroutineContext = DefaultDispa
     return async(context + ActivityContext(this), start, parent) { AppcompatActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
+private fun <F : SupportFragment> createFragmentWrapper(parent: CoroutineScope, tag: String?, id: Int): SupportFragmentCoroutineScopeWrapper<F> {
+    val t = tag
+    return when (t) {
+        null -> SupportFragmentCoroutineScopeWrapper(parent, id)
+        else -> SupportFragmentCoroutineScopeWrapper(parent, t)
+    }
+}
+
 @Suppress("unused")
         /**
          * Verion of the launch function for android usage. It provides convenience access to context objects
@@ -45,18 +53,11 @@ fun <A : AppCompatActivity, R> A.aAsync(context: CoroutineContext = DefaultDispa
          * The function works analogous to [launch].
          */
 fun <F : SupportFragment, R> F.aLaunch(context: CoroutineContext, start: CoroutineStart, parent: Job? = null, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
+    val id = id
+    val tag = tag
     return launch(context + ActivityContext(requireActivity()), start, parent) {
-        createFragmentWrapper(this).block()
+        createFragmentWrapper<F>(this, tag, id).block()
     }
-}
-
-private fun <F : SupportFragment> F.createFragmentWrapper(parent: CoroutineScope): SupportFragmentCoroutineScopeWrapper<F> {
-    val t = tag
-    return when (t) {
-        null -> SupportFragmentCoroutineScopeWrapper(parent, id)
-        else -> SupportFragmentCoroutineScopeWrapper(parent, t)
-    }
-
 }
 
 
@@ -71,8 +72,10 @@ fun <F : SupportFragment, R> F.aAsync(context: CoroutineContext = DefaultDispatc
                                       start: CoroutineStart = CoroutineStart.DEFAULT,
                                       parent: Job? = null,
                                       block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Deferred<R> {
+    val id = id
+    val tag = tag
 
-    return async(context + ActivityContext(requireActivity()), start, parent) { SupportFragmentCoroutineScopeWrapper<F>(this, tag!!).block() }
+    return async(context + ActivityContext(requireActivity()), start, parent) { createFragmentWrapper<F>(this, tag, id).block() }
 }
 
 
@@ -135,7 +138,7 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
 
     @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember", "DEPRECATION")
     override val fragment: F
-        get() = activity.supportFragmentManager.findFragmentByTag(tag) as F
+        get() = activity.supportFragmentManager.run { tag?.let{ findFragmentByTag(it) } ?: findFragmentById(id) } as F
 
     @Suppress("DEPRECATION")
     @Deprecated("Use the support fragment manager", ReplaceWith("supportFragmentManager"))
@@ -154,7 +157,7 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
 
     override suspend fun fragment(): F {
         @Suppress("UNCHECKED_CAST")
-        return supportFragmentManager().findFragmentByTag(tag) as F
+        return supportFragmentManager().run { tag?.let{ findFragmentByTag(it) } ?: findFragmentById(id) } as F
     }
 
     override suspend fun <R> layoutContainer(body: LayoutContainer.() -> R): R {

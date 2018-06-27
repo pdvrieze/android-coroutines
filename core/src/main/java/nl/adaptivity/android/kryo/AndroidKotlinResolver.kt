@@ -4,6 +4,7 @@ import android.accounts.AccountManager
 import android.app.Activity
 import android.app.Fragment
 import android.content.Context
+import android.support.v4.app.FragmentActivity
 import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
@@ -31,6 +32,8 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
                 register(Registration(type, ContextSerializer(context), NAME))
             context is Activity && Fragment::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, FragmentSerializer(context), NAME))
+            context is FragmentActivity && android.support.v4.app.Fragment::class.java.isAssignableFrom(type.superclass) ->
+                register(Registration(type, SupportFragmentSerializer(context), NAME))
             Reference::class.java.isAssignableFrom(type) ->
                 register(Registration(type, ReferenceSerializer(kryo, type.asSubclass(Reference::class.java)), NAME))
             Function::class.java.isAssignableFrom(type.superclass) ->

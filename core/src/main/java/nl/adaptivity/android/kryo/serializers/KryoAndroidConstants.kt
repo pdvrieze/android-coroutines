@@ -8,5 +8,6 @@ internal enum class KryoAndroidConstants {
     OTHERCONTEXT,
     CONTEXT,
     FRAGMENTBYTAG,
-    FRAGMENTBYID
+    FRAGMENTBYID,
+    FRAGMENTWITHOUTHANDLE
 }

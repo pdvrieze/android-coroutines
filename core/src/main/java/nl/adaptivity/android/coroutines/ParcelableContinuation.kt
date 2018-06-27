@@ -40,7 +40,8 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
      */
     @Suppress("UNCHECKED_CAST")
     constructor(parcel: Parcel) :
-            this(parcel.readInt(), continuation = ByteArray(parcel.readInt()).also { parcel.readByteArray(it) } ) {
+            this(parcel.readInt(), continuation = ByteArray(parcel.readInt()).also {
+                parcel.readByteArray(it) } ) {
         Log.d(TAG, "Read continuation from parcel")
     }
 
@@ -118,7 +119,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
      * Helper function that does the deserialization.
      */
     private fun resolve(context: Context): Continuation<T> {
-        if (attachedContext!=context) attachContext(context)
+        if (attachedContext!=context) attachContext2(context)
 
         val h = continuation
 
@@ -138,7 +139,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
 
     override fun describeContents() = 0
 
-    fun attachContext(context: Context?) {
+    fun attachContext2(context: Context?) {
         val attachedContext = this.attachedContext
         when(attachedContext) {
             null -> this.attachedContext = context
@@ -155,6 +156,17 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
                 this.attachedContext = null
             }
         }
+    }
+
+    fun detachContext() {
+        val attachedContext = this.attachedContext
+        if (continuation is Continuation<*>) {
+            val baos = ByteArrayOutputStream()
+            Output(baos).use { out -> kryoAndroid(attachedContext).writeClassAndObject(out, continuation) }
+
+            continuation = baos.toByteArray()
+        }
+        this.attachedContext = null
     }
 
     /**

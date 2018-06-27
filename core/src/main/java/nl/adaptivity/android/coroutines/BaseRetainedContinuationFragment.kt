@@ -1,9 +1,7 @@
 package nl.adaptivity.android.coroutines
 
-import android.app.Activity
 import android.app.Fragment
 import android.os.Bundle
-import kotlin.coroutines.experimental.Continuation
 
 /**
  * Base class for fragments that are used to store continuations.
@@ -22,42 +20,30 @@ open class BaseRetainedContinuationFragment<T> : Fragment() {
         retainInstance = true
 
         if (savedInstanceState!=null) {
-            savedInstanceState.getParcelableArrayList<ParcelableContinuation<T>>(KEY_ACTIVITY_CONTINUATIONS)?.let {
+            savedInstanceState.getParcelableArrayList<ParcelableContinuation<T>>(KEY_ACTIVITY_CONTINUATIONS_STATE)?.let {
                 parcelableContinuations.addAll(it)
             }
-        } else {
-            arguments?.getParcelableArrayList<ParcelableContinuation<T>>(KEY_ACTIVITY_CONTINUATIONS)?.let {
-                parcelableContinuations.apply {
-                    addAll(it)
-                }
-            }
+        }
+        for (parcelableContinuation in parcelableContinuations) {
+            parcelableContinuation.attachContext2(activity)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putParcelableArrayList(KEY_ACTIVITY_CONTINUATIONS, parcelableContinuations)
+
+        // Make sure to store the state now rather than later so that we actually know the fragment id and tags etc.
+        parcelableContinuations.forEach{ it.detachContext() }
+
+        outState.putParcelableArrayList(KEY_ACTIVITY_CONTINUATIONS_STATE, parcelableContinuations)
     }
 
-    fun addContinuation(parcelableContinuation: ParcelableContinuation<ActivityResult>) {
+    fun addContinuation(parcelableContinuation: ParcelableContinuation<T>) {
         parcelableContinuations.add(parcelableContinuation)
     }
 
-    override fun onAttach(activity: Activity?) {
-        super.onAttach(activity)
-        for (parcelableContinuation in parcelableContinuations) {
-            parcelableContinuation.attachContext(activity)
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        for (parcelableContinuation in parcelableContinuations) {
-            parcelableContinuation.attachContext(activity)
-        }
-    }
-
     protected fun dispatchResult(activityResult: T, requestCode: Int) {
+        fragmentManager.executePendingTransactions()
         @Suppress("UNCHECKED_CAST")
         val continuation = parcelableContinuations.single { it.requestCode == requestCode } as ParcelableContinuation<T>
         continuation.resume(activity, activityResult)
@@ -70,12 +56,4 @@ open class BaseRetainedContinuationFragment<T> : Fragment() {
 
     }
 
-    fun setContinuation(continuation: Continuation<T>) {
-        setContinuation(ParcelableContinuation<T>(continuation, attachedContext = activity))
-    }
-
-    @Deprecated("Allow multiple continuations", ReplaceWith("addContinuation(continuation)"))
-    fun setContinuation(continuation: ParcelableContinuation<T>) {
-        (arguments ?: Bundle(1).also { arguments=it }).putParcelableArrayList(KEY_ACTIVITY_CONTINUATIONS, arrayListOf(continuation))
-    }
 }

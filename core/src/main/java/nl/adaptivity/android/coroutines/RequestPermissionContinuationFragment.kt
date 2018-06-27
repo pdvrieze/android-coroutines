@@ -22,5 +22,5 @@ class RequestPermissionContinuationFragment : BaseRetainedContinuationFragment<G
 
 @Suppress("FunctionName")
 fun RequestPermissionContinuationFragment(activityContinuation: ParcelableContinuation<GrantResult?>) = RequestPermissionContinuationFragment().also {
-    it.setContinuation(activityContinuation)
+    it.addContinuation(activityContinuation)
 }

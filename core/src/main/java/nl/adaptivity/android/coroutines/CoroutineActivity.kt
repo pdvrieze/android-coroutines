@@ -118,7 +118,7 @@ const val COROUTINEFRAGMENT_RESULTCODE_START = 0xf00
 /**
  * The [Bundle] key under which the continuation is stored.
  */
-const val KEY_ACTIVITY_CONTINUATIONS = "parcelableContinuations"
+const val KEY_ACTIVITY_CONTINUATIONS_STATE = "parcelableContinuations"
 
 /**
  * Java compatibility interface to make the asynchronous use of [withActivityResult] with a callback

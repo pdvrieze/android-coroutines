@@ -21,5 +21,5 @@ class RetainedContinuationFragment : BaseRetainedContinuationFragment<Maybe<Inte
 
 @Suppress("FunctionName")
 fun RetainedContinuationFragment(activityContinuation: ParcelableContinuation<Maybe<Intent?>>) = RetainedContinuationFragment().also {
-    it.setContinuation(activityContinuation)
+    it.addContinuation(activityContinuation)
 }
