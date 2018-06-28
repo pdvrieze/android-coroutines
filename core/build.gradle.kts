@@ -1,5 +1,5 @@
 import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.BintrayUploadTask
+import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
 import groovy.lang.Closure
 import groovy.util.Node
 import org.gradle.kotlin.dsl.extra
@@ -148,8 +148,6 @@ publishing {
 }
 
 bintray {
-    var user: String? = null
-    var key: String? = null
     if (rootProject.hasProperty("bintrayUser")) {
         user = rootProject.property("bintrayUser") as String?
         key = rootProject.property("bintrayApiKey") as String?
