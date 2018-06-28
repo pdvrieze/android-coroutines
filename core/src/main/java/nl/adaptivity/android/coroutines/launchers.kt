@@ -156,7 +156,7 @@ fun <F : Fragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
     return async(context + ActivityContext(activity), start, parent) { createFragmentWrapper<F>(this, tag, id).block() }
 }
 
-abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
+abstract class LayoutContainerScopeWrapper<A : Activity, out S : LayoutContainerCoroutineScope<A, S>>(private val parent: CoroutineScope) : LayoutContainerCoroutineScope<A, S> {
 
     @Suppress("UNCHECKED_CAST")
     suspend fun activityContext(): ActivityContext<out A> = (extCoroutineContext[ActivityContext] as ActivityContext<out A>?)
@@ -195,24 +195,17 @@ abstract class LayoutContainerScopeWrapper<out A : Activity, out S : LayoutConta
      * Asynchronously invoke [Activity.startActivityForResult] returning the result on completion.
      */
     override suspend fun startActivityForResult(intent: Intent): ActivityResult {
-        val activityContext = activityContext()
         return suspendCoroutine { continuation ->
-            val activity = activityContext.activity
+            val activity = continuation.context[ActivityContext]!!.activity
             @Suppress("DEPRECATION")
-            val fm = activityContext.activity.fragmentManager
+            val fm = activity.fragmentManager
             val existingFragment = fm.findFragmentByTag(RetainedContinuationFragment.TAG) as RetainedContinuationFragment?
-            val contFragment: RetainedContinuationFragment
-            val resultCode: Int
+            val contFragment: RetainedContinuationFragment = existingFragment?: RetainedContinuationFragment()
+            val resultCode: Int = contFragment.lastResultCode+1
 
-            if (existingFragment != null) {
-                resultCode = existingFragment.lastResultCode + 1
-                existingFragment.addContinuation(ParcelableContinuation(continuation, activity, resultCode))
-                contFragment = existingFragment
-            } else {
-                resultCode = COROUTINEFRAGMENT_RESULTCODE_START
-                contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, activity, resultCode))
+            contFragment.addContinuation(ParcelableContinuation(continuation, activity, resultCode))
 
-
+            if (existingFragment == null) {
                 fm.beginTransaction().apply {
                     // This shouldn't happen, but in that case remove the old continuation.
                     existingFragment?.let { remove(it) }
@@ -264,7 +257,7 @@ private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
 
 private class DelegateLayoutContainer(override val containerView: View?) : LayoutContainer
 
-private class ActivityCoroutineScopeWrapper<out A : Activity>(parent: CoroutineScope) :
+private class ActivityCoroutineScopeWrapper<A : Activity>(parent: CoroutineScope) :
         LayoutContainerScopeWrapper<A, ActivityCoroutineScopeWrapper<A>>(parent), ActivityCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Job {

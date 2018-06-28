@@ -102,7 +102,7 @@ interface SupportFragmentCoroutineScope<out F : SupportFragment, out A : AppComp
     suspend fun fragment(): F
 }
 
-private class AppcompatActivityCoroutineScopeWrapper<out A : AppCompatActivity>(parent: CoroutineScope) :
+private class AppcompatActivityCoroutineScopeWrapper<A : AppCompatActivity>(parent: CoroutineScope) :
         LayoutContainerScopeWrapper<A, AppcompatCoroutineScope<A>>(parent), AppcompatCoroutineScope<A> {
 
     override suspend fun <R> layoutContainer(body: LayoutContainer.() -> R): R {
