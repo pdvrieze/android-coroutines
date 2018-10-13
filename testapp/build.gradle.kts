@@ -40,18 +40,16 @@ dependencies {
     implementation(project(":appcompat"))
 
     implementation(Libraries.supportLib)
+    implementation(Libraries.androidExtensionRuntime)
     testImplementation(Libraries.junit)
     testImplementation (Libraries.kryo)
     androidTestImplementation (Libraries.kryo)
+    androidTestRuntimeOnly(Libraries.androidExtensionRuntime)
     useEspresso()
 
     implementation (Libraries.constraintLayout)
     implementation(Libraries.kotlinlib)
     implementation(Libraries.kryo)
-}
-
-kotlin {
-    experimental.coroutines = Coroutines.ENABLE
 }
 
 androidExtensions {

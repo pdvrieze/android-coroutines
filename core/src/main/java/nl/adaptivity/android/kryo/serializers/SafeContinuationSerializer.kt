@@ -4,7 +4,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
-import kotlin.coroutines.experimental.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 
 internal class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo, _SafeContinuation) {
 

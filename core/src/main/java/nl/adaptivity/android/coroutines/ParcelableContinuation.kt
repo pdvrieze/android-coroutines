@@ -7,11 +7,13 @@ import android.os.Parcelable
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import kotlinx.coroutines.experimental.CancellableContinuation
+import kotlinx.coroutines.CancellableContinuation
 import nl.adaptivity.android.kryo.kryoAndroid
 import nl.adaptivity.android.kryo.writeKryoObject
 import java.io.ByteArrayOutputStream
-import kotlin.coroutines.experimental.Continuation
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * This class is part of the magic of serializing continuations in Android. This class only works
@@ -84,7 +86,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
     @JvmOverloads
     open fun cancel(context: Context, cause: Throwable?=null) {
         val continuation = resolve(context)
-        if (continuation is CancellableContinuation) {
+        if (continuation is CancellableContinuation<*>) {
             continuation.cancel(cause)
         } else {
             @Suppress("UNCHECKED_CAST")

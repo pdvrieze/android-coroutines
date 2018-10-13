@@ -3,15 +3,16 @@ package nl.adaptivity.android.test
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 import nl.adaptivity.android.kryo.kryoAndroid
 import org.junit.Test
 
 import org.junit.Assert.*
 import org.objenesis.strategy.StdInstantiatorStrategy
 import java.io.ByteArrayOutputStream
-import kotlin.coroutines.experimental.Continuation
-import kotlin.coroutines.experimental.suspendCoroutine
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resume
 
 /**
  * Example local unit test, which will execute on the development machine (host).

@@ -7,7 +7,9 @@ import android.os.Parcelable
 import android.util.Log
 import com.esotericsoftware.kryo.io.Input
 import nl.adaptivity.android.kryo.kryoAndroid
-import kotlin.coroutines.experimental.Continuation
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Java compatibility helper factory method

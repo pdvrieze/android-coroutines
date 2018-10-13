@@ -11,9 +11,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.annotation.RequiresPermission
-import kotlinx.coroutines.experimental.CancellableContinuation
-import kotlinx.coroutines.experimental.CancellationException
-import kotlinx.coroutines.experimental.suspendCancellableCoroutine
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 // TODO This class is far from complete. Various account manager operations could be added.
 

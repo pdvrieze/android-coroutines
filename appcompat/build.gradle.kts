@@ -56,10 +56,6 @@ val sourcesJar = task<Jar>("androidSourcesJar") {
     from(android.sourceSets["main"].java.srcDirs)
 }
 
-kotlin {
-    experimental.coroutines = Coroutines.ENABLE
-}
-
 androidExtensions {
     isExperimental = true
 }

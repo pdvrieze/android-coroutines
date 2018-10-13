@@ -9,8 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_test6.*
 import kotlinx.android.synthetic.main.fragment_test6.view.*
-import kotlinx.coroutines.experimental.CoroutineStart
-import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.android.UI
 import nl.adaptivity.android.coroutines.aLaunch
 import nl.adaptivity.android.coroutines.startActivityForResult
 

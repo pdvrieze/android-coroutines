@@ -5,8 +5,8 @@ import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import kotlinx.android.synthetic.main.activity_test1.*
-import kotlinx.coroutines.experimental.CoroutineStart
-import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.android.UI
 import nl.adaptivity.android.coroutines.aLaunch
 import nl.adaptivity.android.coroutines.startActivityForResult
 

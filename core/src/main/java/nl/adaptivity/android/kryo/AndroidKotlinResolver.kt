@@ -8,8 +8,8 @@ import android.support.v4.app.FragmentActivity
 import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
-import kotlinx.coroutines.experimental.android.HandlerContext
-import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.android.HandlerContext
+import kotlinx.coroutines.android.UI
 import nl.adaptivity.android.coroutines.ActivityContext
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference

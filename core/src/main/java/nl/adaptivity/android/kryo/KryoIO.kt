@@ -5,7 +5,7 @@ package nl.adaptivity.android.kryo
 import android.content.Context
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
-import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.CommonPool
 import nl.adaptivity.android.kryo.serializers.ObjectSerializer
 import nl.adaptivity.android.kryo.serializers.SafeContinuationSerializer
 import nl.adaptivity.android.kryo.serializers._SafeContinuation

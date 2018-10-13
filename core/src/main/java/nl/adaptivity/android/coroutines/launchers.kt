@@ -13,12 +13,12 @@ import android.support.annotation.RequiresApi
 import android.support.annotation.RequiresPermission
 import android.view.View
 import kotlinx.android.extensions.LayoutContainer
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 import java.io.Serializable
-import kotlin.coroutines.experimental.AbstractCoroutineContextElement
-import kotlin.coroutines.experimental.CoroutineContext
-import kotlin.coroutines.experimental.coroutineContext as extCoroutineContext
-import kotlin.coroutines.experimental.suspendCoroutine
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext as extCoroutineContext
+import kotlin.coroutines.suspendCoroutine
 import kotlin.internal.*
 
 /**
@@ -62,7 +62,7 @@ suspend fun <A : Activity, R> ActivityCoroutineScope<A, *>.aLaunch(context: Coro
                                                                    start: CoroutineStart = CoroutineStart.DEFAULT,
                                                                    parent: Job? = null,
                                                                    block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
-    return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) {
+    return kotlinx.coroutines.launch(context + activityContext(), start, parent) {
         ActivityCoroutineScopeWrapper<A>(this@launch).block()
     }
 }
@@ -79,7 +79,7 @@ suspend fun <A : Activity, R> ActivityCoroutineScope<A, *>.aAsync(context: Corou
                                                                   parent: Job? = null,
                                                                   block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
 
-    return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+    return kotlinx.coroutines.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
 /**
@@ -246,11 +246,11 @@ private class ApplicationCoroutineScopeWrapper(val parent: CoroutineScope) :
 
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+        return kotlinx.coroutines.launch(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
     }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ApplicationCoroutineScopeWrapper.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
+        return kotlinx.coroutines.async(context + applicationContext(), start, parent) { ApplicationCoroutineScopeWrapper(this).block() }
     }
 
 }
@@ -261,11 +261,11 @@ private class ActivityCoroutineScopeWrapper<A : Activity>(parent: CoroutineScope
         LayoutContainerScopeWrapper<A, ActivityCoroutineScopeWrapper<A>>(parent), ActivityCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+        return kotlinx.coroutines.launch(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
     }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend ActivityCoroutineScopeWrapper<A>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
+        return kotlinx.coroutines.async(context + activityContext(), start, parent) { ActivityCoroutineScopeWrapper<A>(this).block() }
     }
 
     @Suppress("unused")
@@ -319,11 +319,11 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
 
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
+        return kotlinx.coroutines.launch(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
     }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend FragmentCoroutineScope<F, Activity>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
+        return kotlinx.coroutines.async(context + activityContext(), start, parent) { createScopeWrapper(this).block() }
     }
 }
 

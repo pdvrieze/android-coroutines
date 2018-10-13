@@ -5,8 +5,8 @@ import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import kotlinx.android.extensions.LayoutContainer
-import kotlinx.coroutines.experimental.*
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 import android.support.v4.app.Fragment as SupportFragment
 import android.support.v4.app.FragmentManager as SupportFragmentManager
 
@@ -114,13 +114,13 @@ private class AppcompatActivityCoroutineScopeWrapper<A : AppCompatActivity>(pare
     }
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend AppcompatCoroutineScope<A>.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) {
+        return kotlinx.coroutines.launch(context + activityContext(), start, parent) {
             AppcompatActivityCoroutineScopeWrapper<A>(this).block()
         }
     }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend AppcompatCoroutineScope<A>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) {
+        return kotlinx.coroutines.async(context + activityContext(), start, parent) {
             AppcompatActivityCoroutineScopeWrapper<A>(this).block()
         }
     }
@@ -165,7 +165,7 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
     }
 
     override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
-        return kotlinx.coroutines.experimental.launch(context + activityContext(), start, parent) {
+        return kotlinx.coroutines.launch(context + activityContext(), start, parent) {
             createScopeWrapper(this).block()
         }
     }
@@ -176,7 +176,7 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
             }
 
     override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.experimental.async(context + activityContext(), start, parent) {
+        return kotlinx.coroutines.async(context + activityContext(), start, parent) {
             createScopeWrapper(this).block()
         }
     }

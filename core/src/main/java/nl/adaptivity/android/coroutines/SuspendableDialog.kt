@@ -4,8 +4,8 @@ import android.app.Activity
 import android.app.DialogFragment
 import android.content.DialogInterface
 import android.os.Bundle
-import kotlinx.coroutines.experimental.CancellationException
-import kotlinx.coroutines.experimental.suspendCancellableCoroutine
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Base class for dialog fragments that support coroutine based dialog invocation. Direct instantiation
