@@ -16,9 +16,6 @@ import org.gradle.api.tasks.wrapper.Wrapper
  * see <http://www.gnu.org/licenses/>.
  */
 
-val androidCompatVersion: String by extra("27.1.1")
-val androidTarget: Int by extra(28)
-
 plugins {
     id("com.android.library") apply false
 

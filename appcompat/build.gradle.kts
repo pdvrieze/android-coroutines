@@ -10,6 +10,7 @@ import org.jetbrains.dokka.gradle.DokkaAndroidTask
 import org.jetbrains.dokka.gradle.LinkMapping
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import java.util.Date
+import Versions
 
 plugins {
     id("com.android.library")
@@ -20,29 +21,19 @@ plugins {
     id("org.jetbrains.dokka-android")
 }
 
-val androidCompatVersion:String by rootProject
-val androidTarget:Int by rootProject
-val myVersion:String by project
-val kotlinVersion:String by project
-
-version = myVersion
+version = Versions.self
 group = "net.devrieze"
 description = "Extension for android coroutines that supports the appcompat library"
 
-repositories {
-    mavenLocal()
-    jcenter()
-    google()
-    maven(url = "https://dl.bintray.com/kotlin/kotlin-dev")
-}
+projectRepositories()
 
 android {
-    compileSdkVersion(androidTarget)
+    compileSdkVersion(Versions.compileSdk)
 
     defaultConfig {
-        minSdkVersion(14)
-        targetSdkVersion(androidTarget)
-        versionName = version as String
+        minSdkVersion(Versions.minSdk)
+        targetSdkVersion(Versions.targetSdk)
+        versionName = Versions.self
     }
 
     compileOptions {
@@ -52,15 +43,15 @@ android {
 }
 
 dependencies {
-    implementation("com.android.support:appcompat-v7:$androidCompatVersion")
+    implementation(Libraries.supportLib)
 
     implementation(kotlin("stdlib"))
-    implementation(kotlin("android-extensions-runtime", kotlinVersion))
+    implementation(kotlin("android-extensions-runtime", Versions.kotlin))
 
     api(project(":core"))
 }
 
-val sourcesJar = task("androidSourcesJar", Jar::class) {
+val sourcesJar = task<Jar>("androidSourcesJar") {
     classifier = "sources"
     from(android.sourceSets["main"].java.srcDirs)
 }
@@ -82,43 +73,11 @@ tasks.withType<DokkaAndroidTask> {
     outputFormat = "html"
 }
 
-inline fun XmlProvider.dependencies(config: Node.() -> Unit): Unit {
-    asNode().dependencies(config)
-}
-
-inline fun Node.dependencies(config: Node.() -> Unit): Node {
-    val ch: List<Node> = children() as List<Node>
-    val node: Node = ch.firstOrNull { name == "dependencies" } ?: appendNode("dependencies")
-    return node.apply(config)
-}
-
-fun Node.dependency(spec: String, type: String = "jar", scope: String = "compile", optional: Boolean = false): Node {
-    return spec.split(':', limit = 3).run {
-        val groupId = get(0)
-        val artifactId = get(1)
-        val version = get(2)
-        dependency(groupId, artifactId, version, type, scope, optional)
-    }
-}
-
-fun Node.dependency(groupId: String, artifactId: String, version: String, type: String = "jar", scope: String = "compile", optional: Boolean = false): Node {
-    return appendNode("dependency").apply {
-        appendNode("groupId", groupId)
-        appendNode("artifactId", artifactId)
-        appendNode("version", version)
-        appendNode("type", type)
-        if (scope != "compile") appendNode("scope", scope)
-        if (optional) appendNode("optional", "true")
-    }
-}
-
 publishing {
     (publications) {
         create<MavenPublication>("MyPublication") {
             artifact(tasks.getByName("bundleRelease"))
 
-//            artifact(project.artifacts.["bundleRelease"])
-//            from(components["java"])
             groupId = project.group as String
             artifactId = "android-coroutines-appcompat"
             artifact(sourcesJar).apply {
@@ -128,7 +87,7 @@ publishing {
                 withXml {
                     dependencies {
                         dependency("$groupId:android-coroutines:[$version]", type = "aar")
-                        dependency("com.android.support:appcompat-v7:$androidCompatVersion")
+                        dependency(Libraries.supportLib)
                         // all other dependencies are transitive
                     }
                 }
@@ -164,10 +123,3 @@ bintray {
 tasks.withType<BintrayUploadTask> {
     dependsOn(sourcesJar)
 }
-
-/*
-
-bintrayUpload {
-    dependsOn(androidSourcesJar)
-}
-*/
