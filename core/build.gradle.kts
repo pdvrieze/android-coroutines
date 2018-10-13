@@ -95,7 +95,7 @@ inline fun XmlProvider.dependencies(config: Node.() -> Unit): Unit {
 
 inline fun Node.dependencies(config: Node.() -> Unit): Node {
     val ch: List<Node> = children() as List<Node>
-    val node: Node = ch.firstOrNull { name == "dependencies" } ?: appendNode("dependencies")
+    val node: Node = ch.firstOrNull { it.name() == "dependencies" } ?: appendNode("dependencies")
     return node.apply(config)
 }
 
