@@ -1,3 +1,4 @@
+import com.android.build.gradle.LibraryExtension
 import com.jfrog.bintray.gradle.BintrayExtension
 import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
 import groovy.lang.Closure
@@ -32,6 +33,7 @@ repositories {
     mavenLocal()
     jcenter()
     google()
+    maven(url = "https://dl.bintray.com/kotlin/kotlin-dev")
 }
 
 android {
@@ -112,7 +114,7 @@ fun Node.dependency(groupId: String, artifactId: String, version: String, type: 
 
 publishing {
     (publications) {
-        "MyPublication"(MavenPublication::class) {
+        create<MavenPublication>("MyPublication") {
             artifact(tasks.getByName("bundleRelease"))
 
 //            artifact(project.artifacts.["bundleRelease"])

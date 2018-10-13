@@ -37,6 +37,7 @@ repositories {
     mavenLocal()
     jcenter()
     google()
+    maven(url = "https://dl.bintray.com/kotlin/kotlin-dev")
 }
 
 
@@ -121,7 +122,7 @@ fun Node.dependency(groupId: String, artifactId: String, version: String, type: 
 
 publishing {
     (publications) {
-        "MyPublication"(MavenPublication::class) {
+        create<MavenPublication>("MyPublication") {
             artifact(tasks.getByName("bundleRelease"))
 
 //            artifact(project.artifacts.["bundleRelease"])
@@ -134,7 +135,7 @@ publishing {
             pom {
                 withXml {
                     dependencies {
-                        dependency("com.esotericsoftware:kryo:4.0.1")
+                        dependency("com.esotericsoftware:kryo:$kryoVersion")
                         dependency("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
                         dependency("org.jetbrains.kotlin:kotlin-android-extensions-runtime:$kotlinVersion")
 //                        dependency("${project.group}:android-coroutines")
