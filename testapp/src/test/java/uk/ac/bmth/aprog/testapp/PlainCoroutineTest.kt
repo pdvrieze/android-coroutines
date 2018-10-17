@@ -26,12 +26,15 @@ class PlainCoroutineTest {
     }
 
     @Test
-    fun testClosureSerialization() {
+    fun testClosureSerialization() = runBlocking {
 //        val kryo = Kryo().apply { instantiatorStrategy = Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy()) }
         val kryo = kryoAndroid
 
         var coroutine: Continuation<Unit>? = null
-        async<String>(start = CoroutineStart.UNDISPATCHED) {
+
+        // Create a coroutine and the suspend it.
+        // It needs to run out of the blocking scope as it suspends. Otherwise it will never return.
+        GlobalScope.async(start = CoroutineStart.UNDISPATCHED) {
             val s = "Hello"
             suspendCoroutine<Unit> { cont -> coroutine = cont }
             s
@@ -39,6 +42,7 @@ class PlainCoroutineTest {
 
         val baos = ByteArrayOutputStream()
 
+        // Write the coroutine to a bytearray
         Output(baos).use { output ->
             kryo.writeClassAndObject(output, coroutine)
         }
@@ -53,7 +57,7 @@ class PlainCoroutineTest {
 
         val deferred = deserializedCoroutine.context[Job] as Deferred<String>
 
-        val result = runBlocking {
+        val result = run {
             System.out.println("5")
             deferred.await().apply {
                 System.out.println("6")
