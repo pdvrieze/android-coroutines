@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.support.annotation.RequiresPermission
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -64,6 +65,7 @@ suspend fun <A : Activity> LayoutContainerCoroutineScope<A, *>.getAuthToken(acco
  * @property cont The continuation that will be invoked on completion.
  */
 class CoroutineAccountManagerCallback<T>(private val cont: CancellableContinuation<T>) : AccountManagerCallback<T> {
+    @UseExperimental(InternalCoroutinesApi::class)
     override fun run(future: AccountManagerFuture<T>) {
         try {
             if (future.isCancelled) {

@@ -2,6 +2,8 @@ package nl.adaptivity.android.coroutines
 
 import android.app.Fragment
 import android.os.Bundle
+import kotlinx.coroutines.Job
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Base class for fragments that are used to store continuations.

@@ -8,8 +8,8 @@ import android.support.v4.app.FragmentActivity
 import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
-import kotlinx.coroutines.android.HandlerContext
-import kotlinx.coroutines.android.UI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.android.HandlerDispatcher
 import nl.adaptivity.android.coroutines.ActivityContext
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference
@@ -22,8 +22,9 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
         return when {
             superReg!=null -> superReg
             type.superclass==null -> superReg
-            HandlerContext::class.java.isAssignableFrom(type) ->
-                register(Registration(type, kryo.pseudoObjectSerializer(UI), NAME))
+            // For now this is actually unique, but this is not very stable.
+            HandlerDispatcher::class.java.isAssignableFrom(type) ->
+                register(Registration(type, kryo.pseudoObjectSerializer(Dispatchers.Main), NAME))
             ActivityContext.Key::class.java == type ->
                 register(Registration(type, kryo.pseudoObjectSerializer(ActivityContext.Key), NAME))
             c!=null && c.javaClass == type ->

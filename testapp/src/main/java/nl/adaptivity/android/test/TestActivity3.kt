@@ -1,15 +1,14 @@
 package nl.adaptivity.android.test
 
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_test1.*
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.android.UI
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import nl.adaptivity.android.coroutines.CoroutineActivity
 import nl.adaptivity.android.coroutines.activityResult
 
 /**
@@ -17,7 +16,7 @@ import nl.adaptivity.android.coroutines.activityResult
  * coroutines. It uses the standard launch function.
  */
 //@SuppressLint("RestrictedApi")
-class TestActivity3 : Activity() {
+class TestActivity3 : CoroutineActivity() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
@@ -32,13 +31,13 @@ class TestActivity3 : Activity() {
 
     fun onButtonClick() {
         Log.w(TAG, "Activity is: $this")
-        launch(start = CoroutineStart.UNDISPATCHED, context = UI) {
+        launch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
             val activityResult = activityResult(Intent(this@TestActivity3, TestActivity2::class.java))
             Log.w(TAG, "Deserialised Activity is: ${this@TestActivity3}")
             val newText = activityResult.flatMap { it?.getCharSequenceExtra(TestActivity2.KEY_DATA) } ?: getString(R.string.lbl_cancelled)
             Log.w(TAG, "newText: $newText")
             val textView = findViewById<TextView>(R.id.textView)
-            Log.w(TAG, "textview value: ${textView}")
+            Log.w(TAG, "textview value: $textView")
             textView.text = newText
         }
     }

@@ -8,9 +8,9 @@ class KotlinObjectInstantiatorStrategy(private val fallback: InstantiatorStrateg
 
     class KotlinObjectInstantiator<T>(type: Class<T>): ObjectInstantiator<T> {
         @Suppress("UNCHECKED_CAST")
-        private val INSTANCE = type.getField("INSTANCE").get(null) as T
+        private val objectInstance = type.getField("INSTANCE").get(null) as T
 
-        override fun newInstance() = INSTANCE
+        override fun newInstance() = objectInstance
     }
 
     override fun <T : Any?> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {

@@ -1,12 +1,14 @@
 package nl.adaptivity.android.coroutines
 
 import android.app.Activity
+import android.app.Fragment
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.*
 import nl.adaptivity.android.util.GrantResult
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.resume
 
@@ -35,19 +37,9 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: A.(ActivityResult)->
  */
 suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     return suspendCoroutine { continuation ->
-        val fm = fragmentManager
-        val contFragment = RetainedContinuationFragment(ParcelableContinuation(continuation, this, COROUTINEFRAGMENT_RESULTCODE_START))
-
-        fm.beginTransaction().apply {
-            // This shouldn't happen, but in that case remove the old continuation.
-            fm.findFragmentByTag(RetainedContinuationFragment.TAG)?.let { remove(it) }
-
-            add(contFragment, RetainedContinuationFragment.TAG)
-        }.commit()
-
+        val contFragment = ensureRetainingFragment()
 
         runOnUiThread {
-            fm.executePendingTransactions()
             contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
         }
     }
@@ -131,3 +123,43 @@ interface SerializableHandler<A, T> {
 
 typealias ActivityResult = Maybe<Intent?>
 
+open class CoroutineActivity: Activity(), CoroutineScope {
+    override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineContext.cancel()
+    }
+/*
+
+    inline fun <R> retainingCoroutineScope(body: RetainingCoroutineScope.() -> R):R {
+        return retainingScope().body()
+    }
+*/
+
+}
+
+open class CoroutineFragment: Fragment(), CoroutineScope {
+    override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineContext.cancel()
+    }
+}
+
+/*
+fun Activity.retainingCoroutineScope(body: RetainingCoroutineScope.() ->R):R {
+    val fragment = ensureRetainingFragment()
+    return fragment.body()
+    return retainingScope().body
+}
+
+
+
+interface RetainingCoroutineContext: CoroutineContext
+
+interface RetainingCoroutineScope: CoroutineScope {
+    val retainingContext: RetainingCoroutineContext
+}
+*/

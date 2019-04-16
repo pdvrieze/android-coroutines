@@ -31,7 +31,9 @@ sealed class Maybe<out T> {
 
     /**
      * Create a new maybe with the function applied to the data (on Ok values only).
+     * @param The function for the mapping.
      */
+    @Suppress("unused")
     fun <R> map(function: (T) -> R): Maybe<R> {
         @Suppress("UNCHECKED_CAST")
         return when(this) {
@@ -51,6 +53,7 @@ sealed class Maybe<out T> {
 
     fun onError(function: ErrorCallback) = if (this is Error) function.onError(e) else null
     fun onCancelled(function: CancellationCallback) = if (this is Cancelled) function.onCancelled() else null
+    @Suppress("unused")
     fun onOk(function: SuccessCallback<T>) = if (this is Ok) function.onOk(data) else null
 
     inline fun <R> onError(function: Error.(Exception) -> R):R? = if (this is Error) function(e) else null
@@ -59,11 +62,13 @@ sealed class Maybe<out T> {
 
     abstract fun <T> select(ok: T, cancelled:T, error: T):T
 
+    @Suppress("NOTHING_TO_INLINE")
     companion object {
-        inline fun <T> error(e: Exception): Maybe<T> = Error(e) as Maybe<T>
+        inline fun <T> error(e: Exception): Maybe<T> = Error(e)
 
-        inline fun <T> cancelled(): Maybe<T> = Cancelled as Maybe<T>
+        inline fun <T> cancelled(): Maybe<T> = Cancelled
 
+        @Suppress("FunctionName")
         @Deprecated("Use Maybe.Ok instead", ReplaceWith("Maybe.Ok<T>value)"))
         inline fun <T> Success(value: T) = Ok(value)
     }

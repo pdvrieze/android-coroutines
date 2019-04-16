@@ -7,9 +7,30 @@ import android.view.View
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import android.support.v4.app.Fragment as SupportFragment
 import android.support.v4.app.FragmentManager as SupportFragmentManager
+import kotlinx.coroutines.async as origAsync
+import kotlinx.coroutines.launch as origLaunch
 
+
+open class CompatCoroutineActivity: AppCompatActivity(), CoroutineScope {
+    override val coroutineContext: CoroutineContext = Job()
+
+    override fun onDestroy() {
+        coroutineContext.cancel(CancellationException("Activity is being destroyed"))
+        super.onDestroy()
+    }
+}
+
+open class CompatCoroutineFragment: SupportFragment(), CoroutineScope {
+    override val coroutineContext: CoroutineContext = Job()
+
+    override fun onDestroy() {
+        coroutineContext.cancel(CancellationException("Fragment is being destroyed"))
+        super.onDestroy()
+    }
+}
 
 @Suppress("unused")
         /**
@@ -18,8 +39,8 @@ import android.support.v4.app.FragmentManager as SupportFragmentManager
          *
          * The function works analogous to [launch].
          */
-fun <A : AppCompatActivity, R> A.aLaunch(context: CoroutineContext, start: CoroutineStart, parent: Job? = null, block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
-    return launch(context + ActivityContext(this), start, parent) { AppcompatActivityCoroutineScopeWrapper<A>(this).block() }
+fun <A : CompatCoroutineActivity, R> A.aLaunch(context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend ActivityCoroutineScope<A, *>.() -> R): Job {
+    return origLaunch(context + ActivityContext(this), start) { AppcompatActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
 @Suppress("unused")
@@ -29,15 +50,14 @@ fun <A : AppCompatActivity, R> A.aLaunch(context: CoroutineContext, start: Corou
          *
          * The function works analogous to [async].
          */
-fun <A : AppCompatActivity, R> A.aAsync(context: CoroutineContext = DefaultDispatcher,
+fun <A : CompatCoroutineActivity, R> A.aAsync(context: CoroutineContext = EmptyCoroutineContext,
                                         start: CoroutineStart = CoroutineStart.DEFAULT,
-                                        parent: Job? = null,
                                         block: suspend ActivityCoroutineScope<A, *>.() -> R): Deferred<R> {
 
-    return async(context + ActivityContext(this), start, parent) { AppcompatActivityCoroutineScopeWrapper<A>(this).block() }
+    return origAsync(context + ActivityContext(this), start) { AppcompatActivityCoroutineScopeWrapper<A>(this).block() }
 }
 
-private fun <F : SupportFragment> createFragmentWrapper(parent: CoroutineScope, tag: String?, id: Int): SupportFragmentCoroutineScopeWrapper<F> {
+private fun <F : CompatCoroutineFragment> createFragmentWrapper(parent: CoroutineScope, tag: String?, id: Int): SupportFragmentCoroutineScopeWrapper<F> {
     val t = tag
     return when (t) {
         null -> SupportFragmentCoroutineScopeWrapper(parent, id)
@@ -52,10 +72,10 @@ private fun <F : SupportFragment> createFragmentWrapper(parent: CoroutineScope, 
          *
          * The function works analogous to [launch].
          */
-fun <F : SupportFragment, R> F.aLaunch(context: CoroutineContext, start: CoroutineStart, parent: Job? = null, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
+fun <F : CompatCoroutineFragment, R> F.aLaunch(context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
     val id = id
     val tag = tag
-    return launch(context + ActivityContext(requireActivity()), start, parent) {
+    return origLaunch(context + ActivityContext(requireActivity()), start) {
         createFragmentWrapper<F>(this, tag, id).block()
     }
 }
@@ -68,14 +88,14 @@ fun <F : SupportFragment, R> F.aLaunch(context: CoroutineContext, start: Corouti
          *
          * The function works analogous to [async].
          */
-fun <F : SupportFragment, R> F.aAsync(context: CoroutineContext = DefaultDispatcher,
+fun <F : CompatCoroutineFragment, R> F.aAsync(context: CoroutineContext = EmptyCoroutineContext,
                                       start: CoroutineStart = CoroutineStart.DEFAULT,
                                       parent: Job? = null,
                                       block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Deferred<R> {
     val id = id
     val tag = tag
 
-    return async(context + ActivityContext(requireActivity()), start, parent) { createFragmentWrapper<F>(this, tag, id).block() }
+    return origAsync(context + ActivityContext(requireActivity()), start) { createFragmentWrapper<F>(this, tag, id).block() }
 }
 
 
@@ -113,14 +133,14 @@ private class AppcompatActivityCoroutineScopeWrapper<A : AppCompatActivity>(pare
         return activityContext().activity.supportFragmentManager
     }
 
-    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend AppcompatCoroutineScope<A>.() -> R): Job {
-        return kotlinx.coroutines.launch(context + activityContext(), start, parent) {
+    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, block: suspend AppcompatCoroutineScope<A>.() -> R): Job {
+        return origLaunch(context + activityContext(), start) {
             AppcompatActivityCoroutineScopeWrapper<A>(this).block()
         }
     }
 
-    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend AppcompatCoroutineScope<A>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.async(context + activityContext(), start, parent) {
+    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, block: suspend AppcompatCoroutineScope<A>.() -> R): Deferred<R> {
+        return origAsync(context + activityContext(), start) {
             AppcompatActivityCoroutineScopeWrapper<A>(this).block()
         }
     }
@@ -164,8 +184,8 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
         return SupportDelegateLayoutContainer(fragment().view).body()
     }
 
-    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
-        return kotlinx.coroutines.launch(context + activityContext(), start, parent) {
+    override suspend fun launch(context: CoroutineContext, start: CoroutineStart, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Job {
+        return origLaunch(context + activityContext(), start) {
             createScopeWrapper(this).block()
         }
     }
@@ -175,8 +195,8 @@ private constructor(parent: CoroutineScope, private val tag: String?, private va
                 else -> SupportFragmentCoroutineScopeWrapper<F>(coroutineScope, tag)
             }
 
-    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, parent: Job?, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Deferred<R> {
-        return kotlinx.coroutines.async(context + activityContext(), start, parent) {
+    override suspend fun <R> async(context: CoroutineContext, start: CoroutineStart, block: suspend SupportFragmentCoroutineScope<F, AppCompatActivity>.() -> R): Deferred<R> {
+        return origAsync(context + activityContext(), start) {
             createScopeWrapper(this).block()
         }
     }

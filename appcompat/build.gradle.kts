@@ -69,52 +69,55 @@ tasks.withType<DokkaAndroidTask> {
     outputFormat = "html"
 }
 
-publishing {
-    (publications) {
-        create<MavenPublication>("MyPublication") {
-            artifact(tasks.getByName("bundleRelease"))
+afterEvaluate{
+    publishing {
+        (publications) {
+            create<MavenPublication>("MyPublication") {
+                artifact("bundleReleaseAar")
 
-            groupId = project.group as String
-            artifactId = "android-coroutines-appcompat"
-            artifact(sourcesJar).apply {
-                classifier="sources"
-            }
-            pom {
-                withXml {
-                    dependencies {
-                        dependency("$groupId:android-coroutines:[$version]", type = "aar")
-                        dependency(Libraries.supportLib)
-                        // all other dependencies are transitive
+                groupId = project.group as String
+                artifactId = "android-coroutines-appcompat"
+                artifact(sourcesJar).apply {
+                    classifier="sources"
+                }
+                pom {
+                    withXml {
+                        dependencies {
+                            dependency("$groupId:android-coroutines:[$version]", type = "aar")
+                            dependency(Libraries.supportLib)
+                            // all other dependencies are transitive
+                        }
                     }
                 }
             }
         }
     }
-}
 
-bintray {
-    if (rootProject.hasProperty("bintrayUser")) {
-        user = rootProject.property("bintrayUser") as String?
-        key = rootProject.property("bintrayApiKey") as String?
-    }
-
-    setPublications("MyPublication")
-
-    pkg(closureOf<BintrayExtension.PackageConfig> {
-        repo = "maven"
-        name = "android-coroutines-appcompat"
-        userOrg = "pdvrieze"
-        setLicenses("Apache-2.0")
-        vcsUrl = "https://github.com/pdvrieze/android-coroutines.git"
-
-        version.apply {
-            name = project.version as String
-            desc = "Context capture is still a major issue, try to provide wrappers to prevent this."
-            released = Date().toString()
-            vcsTag = "v$version"
+    bintray {
+        if (rootProject.hasProperty("bintrayUser")) {
+            user = rootProject.property("bintrayUser") as String?
+            key = rootProject.property("bintrayApiKey") as String?
         }
-    })
+
+        setPublications("MyPublication")
+
+        pkg(closureOf<BintrayExtension.PackageConfig> {
+            repo = "maven"
+            name = "android-coroutines-appcompat"
+            userOrg = "pdvrieze"
+            setLicenses("Apache-2.0")
+            vcsUrl = "https://github.com/pdvrieze/android-coroutines.git"
+
+            version.apply {
+                name = project.version as String
+                desc = "Context capture is still a major issue, try to provide wrappers to prevent this."
+                released = Date().toString()
+                vcsTag = "v$version"
+            }
+        })
+    }
 }
+
 
 tasks.withType<BintrayUploadTask> {
     dependsOn(sourcesJar)

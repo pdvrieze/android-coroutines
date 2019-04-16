@@ -26,7 +26,7 @@ class PlainCoroutineTestAndroid {
     }
 
     @Test
-    fun testClosureSerialization() {
+    fun testClosureSerialization() = runBlocking {
 //        val kryo = Kryo().apply { instantiatorStrategy = Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy()) }
         val kryo = kryoAndroid
 

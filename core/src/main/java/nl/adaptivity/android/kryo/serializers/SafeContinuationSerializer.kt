@@ -42,6 +42,9 @@ internal class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo
     }
 }
 
+@Suppress("ObjectPropertyName")
 internal val _SafeContinuation = Class.forName("kotlin.coroutines.experimental.SafeContinuation")
+@Suppress("ObjectPropertyName")
 internal val _Resumed = _SafeContinuation.getDeclaredField("RESUMED").let { f -> f.isAccessible=true; f.get(null) }
+@Suppress("ObjectPropertyName")
 internal val _Undecided = _SafeContinuation.getDeclaredField("UNDECIDED").let { f -> f.isAccessible=true; f.get(null) }

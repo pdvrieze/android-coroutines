@@ -1,7 +1,6 @@
 package nl.adaptivity.android.test
 
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,11 +9,13 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_test6.*
 import kotlinx.android.synthetic.main.fragment_test6.view.*
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.android.UI
+import kotlinx.coroutines.Dispatchers
+import nl.adaptivity.android.coroutines.CompatCoroutineFragment
+import nl.adaptivity.android.coroutines.CoroutineFragment
 import nl.adaptivity.android.coroutines.aLaunch
 import nl.adaptivity.android.coroutines.startActivityForResult
 
-class TestFragment6: Fragment() {
+class TestFragment6: CompatCoroutineFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_test6, container, false).also { root ->
             root.button.setOnClickListener { onButtonClick() }
@@ -24,7 +25,7 @@ class TestFragment6: Fragment() {
 
     private fun onButtonClick() {
         Log.w(TestActivity6.TAG, "Activity is: $this")
-        aLaunch(start = CoroutineStart.UNDISPATCHED, context = UI) {
+        aLaunch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
             val activityResult = startActivityForResult<TestActivity2>()
 
             Log.w(TestActivity6.TAG, "Deserialised Activity is: $activity")

@@ -53,6 +53,7 @@ dependencies {
     implementation(Libraries.kotlinlib)
     implementation(Libraries.androidExtensionRuntime)
 
+    api(Libraries.coroutines)
     api(Libraries.coroutinesAndroid)
 }
 
@@ -66,7 +67,7 @@ androidExtensions {
 }
 
 tasks.withType<DokkaAndroidTask> {
-    externalDocumentationLink(delegateClosureOf<DokkaConfiguration.ExternalDocumentationLink.Builder>{
+    externalDocumentationLink(delegateClosureOf<DokkaConfiguration.ExternalDocumentationLink.Builder> {
         url = URL("https://developer.android.com/reference/")
     })
     linkMappings.add(LinkMapping().apply {
@@ -77,53 +78,57 @@ tasks.withType<DokkaAndroidTask> {
     outputFormat = "html"
 }
 
-publishing {
-    (publications) {
-        create<MavenPublication>("MyPublication") {
-            artifact(tasks.getByName("bundleRelease"))
 
-            groupId = project.group as String
-            artifactId = "android-coroutines"
-            artifact(sourcesJar).apply {
-                classifier = "sources"
-            }
-            pom {
-                withXml {
-                    dependencies {
-                        dependency(Libraries.kryo)
-                        dependency(Libraries.kotlinlib)
-                        dependency(Libraries.androidExtensionRuntime)
+afterEvaluate {
+    publishing {
+        (publications) {
+            create<MavenPublication>("MyPublication") {
+                artifact("bundleReleaseAar")
 
-                        dependency(Libraries.coroutinesAndroid, type = "jar")
+                groupId = project.group as String
+                artifactId = "android-coroutines"
+                artifact(sourcesJar).apply {
+                    classifier = "sources"
+                }
+                pom {
+                    withXml {
+                        dependencies {
+                            dependency(Libraries.kryo)
+                            dependency(Libraries.kotlinlib)
+                            dependency(Libraries.androidExtensionRuntime)
+
+                            dependency(Libraries.coroutinesAndroid, type = "jar")
+                        }
                     }
                 }
             }
         }
     }
-}
 
-bintray {
-    if (rootProject.hasProperty("bintrayUser")) {
-        user = rootProject.property("bintrayUser") as String?
-        key = rootProject.property("bintrayApiKey") as String?
-    }
-
-    setPublications("MyPublication")
-
-    pkg(closureOf<BintrayExtension.PackageConfig> {
-        repo = "maven"
-        name = "android-coroutines"
-        userOrg = "pdvrieze"
-        setLicenses("Apache-2.0")
-        vcsUrl = "https://github.com/pdvrieze/android-coroutines.git"
-
-        version.apply {
-            name = project.version as String
-            desc = "Context capture is still a major issue, try to provide wrappers to prevent this."
-            released = Date().toString()
-            vcsTag = "v$version"
+    bintray {
+        if (rootProject.hasProperty("bintrayUser")) {
+            user = rootProject.property("bintrayUser") as String?
+            key = rootProject.property("bintrayApiKey") as String?
         }
-    })
+
+        setPublications("MyPublication")
+
+        pkg(closureOf<BintrayExtension.PackageConfig> {
+            repo = "maven"
+            name = "android-coroutines"
+            userOrg = "pdvrieze"
+            setLicenses("Apache-2.0")
+            vcsUrl = "https://github.com/pdvrieze/android-coroutines.git"
+
+            version.apply {
+                name = project.version as String
+                desc =
+                    "Context capture is still a major issue, try to provide wrappers to prevent this."
+                released = Date().toString()
+                vcsTag = "v$version"
+            }
+        })
+    }
 }
 
 tasks.withType<BintrayUploadTask> {

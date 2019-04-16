@@ -1,11 +1,10 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "KotlinDeprecation")
 
 package nl.adaptivity.android.kryo
 
 import android.content.Context
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
-import kotlinx.coroutines.CommonPool
 import nl.adaptivity.android.kryo.serializers.ObjectSerializer
 import nl.adaptivity.android.kryo.serializers.SafeContinuationSerializer
 import nl.adaptivity.android.kryo.serializers._SafeContinuation
@@ -34,6 +33,7 @@ fun Kryo.registerAndroidSerializers() {
     /* TODO While this doesn't affect instantiation (The KotlinObjectStantiatorStrategy handles that)
      * this may be needed to not serialize/deserialize the actual pool state.
      */
-    register(CommonPool::class.java, ObjectSerializer(this, CommonPool::class.java))
+    val commonPoolClass = Class.forName("kotlinx.coroutines.CommonPool")
+    register(commonPoolClass, ObjectSerializer(this,commonPoolClass))
 }
 

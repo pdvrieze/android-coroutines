@@ -6,10 +6,10 @@ import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.*
 
 object Versions {
-    val kotlin = "1.3.0"
+    val kotlin = "1.3.30"
     val kryo = "4.0.2"
-    val coroutines = "1.0.0"
-    val androidBuildTools = "3.1.2"
+    val coroutines = "1.2.0"
+    val androidBuildTools = "3.3.2"
     val dokka = "0.9.16"
     val bintray = "1.8.3"
     val self = "0.7.1-SNAPSHOT"
@@ -35,6 +35,7 @@ object Libraries {
     val kotlinlib = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}"
     val kotlinlib8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Versions.kotlin}"
     val androidExtensionRuntime = "org.jetbrains.kotlin:kotlin-android-extensions-runtime:${Versions.kotlin}"
+    val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}"
     val coroutinesAndroid = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
 }
 

@@ -1,7 +1,6 @@
 package nl.adaptivity.android.test
 
 import android.app.Activity
-import android.app.Fragment
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,11 +10,12 @@ import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_test6.*
 import kotlinx.android.synthetic.main.fragment_test6.view.*
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.android.UI
+import kotlinx.coroutines.Dispatchers
+import nl.adaptivity.android.coroutines.CoroutineFragment
 import nl.adaptivity.android.coroutines.aLaunch
 import nl.adaptivity.android.coroutines.startActivityForResult
 
-class TestFragment7: Fragment() {
+class TestFragment7: CoroutineFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_test6, container, false).also { root ->
             root.button.setOnClickListener { onButtonClick() }
@@ -25,12 +25,12 @@ class TestFragment7: Fragment() {
 
     private fun onButtonClick() {
         Log.w(TestActivity7.TAG, "Activity is: $this")
-        aLaunch(start = CoroutineStart.UNDISPATCHED, context = UI) {
+        aLaunch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
             val activityResult = startActivityForResult<TestActivity2>()
 
             val textView = findViewById<TextView>(R.id.textView)!!
 
-            Log.w(TestActivity7.TAG, "Deserialised Activity is: $activity")
+            Log.w(TestActivity7.TAG, "Deserialised Activity is: ${activity()}")
             val newText = activityResult.flatMap { it?.getCharSequenceExtra(TestActivity2.KEY_DATA) } ?: getString(R.string.lbl_cancelled)
             Log.w(TestActivity7.TAG, "newText: $newText")
 

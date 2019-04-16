@@ -22,6 +22,6 @@ plugins {
     kotlin("android") apply false
 }
 
-task("wrapper", Wrapper::class) {
-    gradleVersion = "4.10.2"
+tasks.named<Wrapper>("wrapper") {
+    gradleVersion = "5.1.1"
 }

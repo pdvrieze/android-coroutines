@@ -34,6 +34,10 @@ android {
         setTargetCompatibility("1.8")
         setSourceCompatibility("1.8")
     }
+
+    packagingOptions {
+        pickFirst("META-INF/atomicfu.kotlin_module")
+    }
 }
 
 dependencies {
@@ -41,15 +45,16 @@ dependencies {
 
     implementation(Libraries.supportLib)
     implementation(Libraries.androidExtensionRuntime)
-    testImplementation(Libraries.junit)
-    testImplementation (Libraries.kryo)
-    androidTestImplementation (Libraries.kryo)
-    androidTestRuntimeOnly(Libraries.androidExtensionRuntime)
-    useEspresso()
 
-    implementation (Libraries.constraintLayout)
+    implementation(Libraries.constraintLayout)
     implementation(Libraries.kotlinlib)
     implementation(Libraries.kryo)
+
+    testImplementation(Libraries.junit)
+//    testImplementation (Libraries.kryo)
+//    androidTestImplementation (Libraries.kryo)
+    androidTestRuntimeOnly(Libraries.androidExtensionRuntime)
+    useEspresso()
 }
 
 androidExtensions {

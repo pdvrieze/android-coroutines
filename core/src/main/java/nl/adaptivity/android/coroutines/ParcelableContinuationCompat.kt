@@ -101,6 +101,6 @@ class ParcelableContinuationCompat<A: Activity, T> private constructor(requestCo
         }
 
         @JvmStatic
-        val TAG = ParcelableContinuationCompat::class.java.simpleName
+        val TAG: String = ParcelableContinuationCompat::class.java.simpleName
     }
 }
