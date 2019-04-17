@@ -1,13 +1,9 @@
 import com.jfrog.bintray.gradle.BintrayExtension
 import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
-import groovy.lang.Closure
-import groovy.util.Node
-import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.repositories
 import org.jetbrains.dokka.DokkaConfiguration
 import org.jetbrains.dokka.gradle.DokkaAndroidTask
 import org.jetbrains.dokka.gradle.LinkMapping
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import java.util.Date
 import java.net.URL
 
@@ -87,7 +83,7 @@ afterEvaluate {
     publishing {
         (publications) {
             create<MavenPublication>("MyPublication") {
-                artifact("bundleReleaseAar")
+                artifact(tasks["bundleReleaseAar"])
 
                 groupId = project.group as String
                 artifactId = "android-coroutines"

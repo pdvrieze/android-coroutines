@@ -78,7 +78,7 @@ afterEvaluate{
     publishing {
         (publications) {
             create<MavenPublication>("MyPublication") {
-                artifact("bundleReleaseAar")
+                artifact(tasks["bundleReleaseAar"])
 
                 groupId = project.group as String
                 artifactId = "android-coroutines-appcompat"
