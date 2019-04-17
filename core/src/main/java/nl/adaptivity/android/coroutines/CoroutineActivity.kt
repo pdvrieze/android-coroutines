@@ -38,6 +38,7 @@ fun <A:Activity> A.withActivityResult(intent: Intent, body: A.(ActivityResult)->
 suspend fun Activity.activityResult(intent:Intent): ActivityResult {
     return suspendCoroutine { continuation ->
         val contFragment = ensureRetainingFragment()
+        contFragment.addContinuation(ParcelableContinuation(continuation, this, COROUTINEFRAGMENT_RESULTCODE_START))
 
         runOnUiThread {
             contFragment.startActivityForResult(intent, COROUTINEFRAGMENT_RESULTCODE_START)
