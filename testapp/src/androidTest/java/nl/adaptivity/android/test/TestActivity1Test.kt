@@ -97,7 +97,7 @@ class TestActivity1Test {
 
     @Test
     fun testActivity7TestSerializeFragment() {
-        activity7TestRule.launchActivity(Intent())
+        activity7TestRule.launchActivity(null)
         activity7TestRule.runOnUiThread {
             val frag7 = activity7TestRule.activity.fragmentManager.findFragmentByTag("frag7outer")
             val baos = ByteArrayOutputStream()
@@ -132,7 +132,7 @@ class TestActivity1Test {
     fun testActivity1Test2() {
         KryoLog.set(KryoLog.LEVEL_TRACE)
 
-        activity1TestRule.launchActivity(Intent())
+        activity1TestRule.launchActivity(null)
         run {
             // Activity 1
             launchActivity2()
@@ -156,7 +156,7 @@ class TestActivity1Test {
     }
 
     private fun textActivity(testRule: ActivityTestRule<*>) {
-        testRule.launchActivity(Intent())
+        testRule.launchActivity(null)
         run {
             // Activity 1
             launchActivity2()
