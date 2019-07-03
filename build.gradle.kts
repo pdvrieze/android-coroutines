@@ -23,5 +23,5 @@ plugins {
 }
 
 tasks.named<Wrapper>("wrapper") {
-    gradleVersion = "5.1.1"
+    gradleVersion = "5.3.1"
 }
