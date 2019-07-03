@@ -14,6 +14,7 @@ plugins {
     id("maven-publish")
     id("com.jfrog.bintray")
     id("org.jetbrains.dokka-android")
+    idea
 }
 
 version = Versions.self
@@ -135,3 +136,8 @@ tasks.withType<BintrayUploadTask> {
     dependsOn(sourcesJar)
 }
 
+idea {
+    module {
+        name = "android-coroutines.core"
+    }
+}
