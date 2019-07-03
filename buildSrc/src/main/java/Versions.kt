@@ -6,13 +6,13 @@ import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.*
 
 object Versions {
-    val kotlin = "1.3.30"
+    val kotlin = "1.3.40"
     val kryo = "4.0.2"
     val coroutines = "1.2.0"
-    val androidBuildTools = "3.3.2"
+    val androidBuildTools = "3.4.1"
     val dokka = "0.9.16"
     val bintray = "1.8.3"
-    val self = "0.7.1-SNAPSHOT"
+    val self = "0.7.990-SNAPSHOT"
     @Deprecated("Use self", ReplaceWith("this.self"))
     val myVersion get() = self
     val constraintLayout = "1.1.3"
@@ -39,7 +39,7 @@ object Libraries {
     val coroutinesAndroid = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
 }
 
-private fun DependencyHandler.`androidTestImplementation`(dependencyNotation: Any): Dependency? =
+private fun DependencyHandler.androidTestImplementation(dependencyNotation: Any): Dependency? =
         add("androidTestImplementation", dependencyNotation)
 
 
