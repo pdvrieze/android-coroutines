@@ -10,12 +10,10 @@ import kotlinx.android.synthetic.main.fragment_test6.*
 import kotlinx.android.synthetic.main.fragment_test6.view.*
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import nl.adaptivity.android.coroutines.CompatCoroutineFragment
-import nl.adaptivity.android.coroutines.CoroutineFragment
-import nl.adaptivity.android.coroutines.aLaunch
-import nl.adaptivity.android.coroutines.startActivityForResult
+import nl.adaptivity.android.coroutinesCompat.AppcompatCoroutineFragment
+import nl.adaptivity.android.coroutinesCompat.startActivityForResult
 
-class TestFragment6: CompatCoroutineFragment() {
+class TestFragment6: AppcompatCoroutineFragment<TestFragment6>() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_test6, container, false).also { root ->
             root.button.setOnClickListener { onButtonClick() }
@@ -25,7 +23,7 @@ class TestFragment6: CompatCoroutineFragment() {
 
     private fun onButtonClick() {
         Log.w(TestActivity6.TAG, "Activity is: $this")
-        aLaunch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
+        launch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
             val activityResult = startActivityForResult<TestActivity2>()
 
             Log.w(TestActivity6.TAG, "Deserialised Activity is: $activity")

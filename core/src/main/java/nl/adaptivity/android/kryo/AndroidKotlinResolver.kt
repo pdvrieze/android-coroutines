@@ -10,7 +10,8 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultClassResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.android.HandlerDispatcher
-import nl.adaptivity.android.coroutines.ActivityContext
+import nl.adaptivity.android.coroutines.contexts.AndroidContext
+import nl.adaptivity.android.coroutines.contexts.FragmentContext
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference
 
@@ -25,8 +26,10 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
             // For now this is actually unique, but this is not very stable.
             HandlerDispatcher::class.java.isAssignableFrom(type) ->
                 register(Registration(type, kryo.pseudoObjectSerializer(Dispatchers.Main), NAME))
-            ActivityContext.Key::class.java == type ->
-                register(Registration(type, kryo.pseudoObjectSerializer(ActivityContext.Key), NAME))
+            AndroidContext.Key::class.java == type ->
+                register(Registration(type, kryo.pseudoObjectSerializer(AndroidContext.Key), NAME))
+            FragmentContext.Key::class.java == type ->
+                register(Registration(type, kryo.pseudoObjectSerializer(FragmentContext.Key), NAME))
             c!=null && c.javaClass == type ->
                 register(Registration(type, ContextSerializer(context), NAME))
             Context::class.java.isAssignableFrom(type.superclass) ->

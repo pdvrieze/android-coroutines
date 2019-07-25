@@ -8,6 +8,7 @@ import android.util.Log
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.CancellableContinuation
+import nl.adaptivity.android.coroutines.contexts.AndroidContext
 import nl.adaptivity.android.kryo.kryoAndroid
 import nl.adaptivity.android.kryo.writeKryoObject
 import java.io.ByteArrayOutputStream
@@ -131,7 +132,7 @@ open class ParcelableContinuation<T> protected constructor(val requestCode: Int,
         }
 
         when (context) {
-            is Activity -> (continuation.context[ActivityContext] as ActivityContext<Activity>?)?.run { activity = context }
+            is Activity -> (continuation.context[AndroidContext] as AndroidContext<Activity>?)?.run { androidContext = context }
         }
 
 

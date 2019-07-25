@@ -47,11 +47,11 @@ suspend fun <A : Activity> AccountManager.getAuthToken(activity: A, account: Acc
  * @see [AccountManager.getAuthToken]
  */
 @RequiresPermission("android.permission.USE_CREDENTIALS")
-suspend fun <A : Activity> LayoutContainerCoroutineScope<A, *>.getAuthToken(account: Account, authTokenType: String, options: Bundle? = null): String? {
+suspend fun <A : Activity> AndroidContextCoroutineScope<A, *>.getAuthToken(account: Account, authTokenType: String, options: Bundle? = null): String? {
     val resultBundle = callAccountManagerAsync<Bundle> { callback -> getAuthToken(account, authTokenType, options, false, callback, null) }
     if (resultBundle.containsKey(AccountManager.KEY_INTENT)) {
         val intent = resultBundle.get(AccountManager.KEY_INTENT) as Intent
-        val activityResult = activity().activityResult(intent)
+        val activityResult = getAndroidContext().activityResult(intent)
         return activityResult.onOk { getAuthToken(account, authTokenType, options) }
     } else {
         return resultBundle.getString(AccountManager.KEY_AUTHTOKEN)
@@ -98,7 +98,7 @@ suspend inline fun <R> AccountManager.callAsync(crossinline operation: AccountMa
 /**
  * Helper function that helps with calling account manager operations asynchronously.
  */
-suspend inline fun <R> ContextedCoroutineScope<*,*>.callAccountManagerAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
+suspend inline fun <R> AndroidContextCoroutineScope<*,*>.callAccountManagerAsync(crossinline operation: AccountManager.(CoroutineAccountManagerCallback<R>) -> Unit): R {
     val androidContext = getAndroidContext()
     return suspendCancellableCoroutine { cont ->
         AccountManager.get(androidContext).operation(CoroutineAccountManagerCallback(cont))
@@ -123,6 +123,6 @@ suspend fun AccountManager.hasFeatures(account: Account, features: Array<String?
  *
  * @see [AccountManager.hasFeatures].
  */
-internal suspend fun ContextedCoroutineScope<*,*>.accountHasFeaturesImpl(account: Account, features: Array<String?>): Boolean {
+suspend fun AndroidContextCoroutineScope<*,*>.accountHasFeatures(account: Account, features: Array<String?>): Boolean {
     return callAccountManagerAsync { callback -> hasFeatures(account, features, callback, null) }
 }

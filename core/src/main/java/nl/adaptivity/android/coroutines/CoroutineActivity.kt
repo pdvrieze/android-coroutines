@@ -1,12 +1,12 @@
 package nl.adaptivity.android.coroutines
 
 import android.app.Activity
-import android.app.Fragment
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
 import kotlinx.coroutines.*
+import nl.adaptivity.android.coroutines.contexts.AndroidContext
 import nl.adaptivity.android.util.GrantResult
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.suspendCoroutine
@@ -124,13 +124,26 @@ interface SerializableHandler<A, T> {
 
 typealias ActivityResult = Maybe<Intent?>
 
-open class CoroutineActivity: Activity(), CoroutineScope {
-    override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
+open class CoroutineActivity<A: CoroutineActivity<A>>: Activity(), AndroidContextCoroutineScope<A, ActivityCoroutineScopeWrapper<A>> {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun getAndroidContext(): A {
+        return this as A
+    }
+
+    override val coroutineContext: CoroutineContext =
+        Job() + Dispatchers.Default + AndroidContext(this)
+
+    override fun createScopeWrapper(parentScope: CoroutineScope): ActivityCoroutineScopeWrapper<A> {
+        return ActivityCoroutineScopeWrapper(parentScope)
+    }
 
     override fun onDestroy() {
         super.onDestroy()
         coroutineContext.cancel()
     }
+
+
 /*
 
     inline fun <R> retainingCoroutineScope(body: RetainingCoroutineScope.() -> R):R {
@@ -138,15 +151,6 @@ open class CoroutineActivity: Activity(), CoroutineScope {
     }
 */
 
-}
-
-open class CoroutineFragment: Fragment(), CoroutineScope {
-    override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
-
-    override fun onDestroy() {
-        super.onDestroy()
-        coroutineContext.cancel()
-    }
 }
 
 /*

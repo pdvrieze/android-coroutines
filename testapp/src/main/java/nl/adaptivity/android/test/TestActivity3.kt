@@ -16,7 +16,7 @@ import nl.adaptivity.android.coroutines.activityResult
  * coroutines. It uses the standard launch function.
  */
 //@SuppressLint("RestrictedApi")
-class TestActivity3 : CoroutineActivity() {
+class TestActivity3 : CoroutineActivity<TestActivity3>() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)

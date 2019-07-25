@@ -5,15 +5,14 @@ import android.util.Log
 import kotlinx.android.synthetic.main.activity_test1.*
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import nl.adaptivity.android.coroutines.CompatCoroutineActivity
-import nl.adaptivity.android.coroutines.aLaunch
 import nl.adaptivity.android.coroutines.startActivityForResult
+import nl.adaptivity.android.coroutinesCompat.CompatCoroutineActivity
 
 /**
  * Implementation of an activity that uses an async launch to get a result from an activity using
  * coroutines. It uses the "safe" launch function and a synthetic accessor for the contained views.
  */
-class TestActivity5 : CompatCoroutineActivity() {
+class TestActivity5 : CompatCoroutineActivity<TestActivity5>() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
@@ -28,7 +27,7 @@ class TestActivity5 : CompatCoroutineActivity() {
 
     fun onButtonClick() {
         Log.w(TAG, "Activity is: $this")
-        aLaunch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
+        launch(start = CoroutineStart.UNDISPATCHED, context = Dispatchers.Main) {
             val activityResult = startActivityForResult<TestActivity2>()
 
             Log.w(TAG, "Deserialised Activity is: $activity")
