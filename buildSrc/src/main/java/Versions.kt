@@ -21,16 +21,16 @@ object Versions {
     val compileSdk = 28
     val androidCompat = "28.0.0"
     val junit ="4.12"
-    val espressoCore = "3.0.2"
-    val androidTestSupport = "1.0.2"
+    val espressoCore = "3.1.0"
+    val androidTestSupport = "1.1.0"
 }
 object Libraries {
     val supportLib = "com.android.support:appcompat-v7:${Versions.androidCompat}"
     val junit = "junit:junit:${Versions.junit}"
     val kryo = "com.esotericsoftware:kryo:${Versions.kryo}"
-    val androidTestRunner = "com.android.support.test:runner:${Versions.androidTestSupport}"
-    val androidTestRules = "com.android.support.test:rules:${Versions.androidTestSupport}"
-    val espressoCore ="com.android.support.test.espresso:espresso-core:${Versions.espressoCore}"
+    val androidTestRunner = "androidx.test:runner:${Versions.androidTestSupport}"
+    val androidTestRules = "androidx.test:rules:${Versions.androidTestSupport}"
+    val espressoCore ="androidx.test.espresso:espresso-core:${Versions.espressoCore}"
     val constraintLayout = "com.android.support.constraint:constraint-layout:${Versions.constraintLayout}"
     val kotlinlib = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}"
     val kotlinlib8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Versions.kotlin}"
@@ -44,6 +44,7 @@ private fun DependencyHandler.androidTestImplementation(dependencyNotation: Any)
 
 
 fun DependencyHandlerScope.useEspresso() {
+    androidTestImplementation("androidx.test.ext:junit:1.0.0")
     androidTestImplementation(Libraries.androidTestRunner)
     androidTestImplementation(Libraries.androidTestRules)
     androidTestImplementation(Libraries.espressoCore)

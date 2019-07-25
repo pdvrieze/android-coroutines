@@ -11,17 +11,15 @@ internal class InitialResultSerializer(val parent: Serializer<Any?>): Serializer
         val readValue = kryo.readClassAndObject(input)
         return when (readValue) {
             KryoAndroidConstants.COROUTINE_SUSPENDED -> COROUTINE_SUSPENDED
-            KryoAndroidConstants.RESUMED -> _Resumed
-            KryoAndroidConstants.UNDECIDED -> _Undecided
             else -> readValue
         }
     }
 
     override fun write(kryo: Kryo, output: Output, obj: Any?) {
         when (obj) {
-            COROUTINE_SUSPENDED -> kryo.writeClassAndObject(output, KryoAndroidConstants.COROUTINE_SUSPENDED)
-            _Resumed -> kryo.writeClassAndObject(output, KryoAndroidConstants.RESUMED)
-            _Undecided -> kryo.writeClassAndObject(output, KryoAndroidConstants.UNDECIDED)
+//            COROUTINE_SUSPENDED -> kryo.writeClassAndObject(output, KryoAndroidConstants.COROUTINE_SUSPENDED)
+//            _Resumed -> kryo.writeClassAndObject(output, KryoAndroidConstants.RESUMED)
+//            _Undecided -> kryo.writeClassAndObject(output, KryoAndroidConstants.UNDECIDED)
             else -> parent.write(kryo, output, obj)
         }
     }

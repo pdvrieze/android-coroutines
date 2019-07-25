@@ -26,7 +26,7 @@ class AppcompatFragmentCoroutineScopeWrapper<out F : Fragment>(
 ) : AppcompatFragmentCoroutineScope<F>, LayoutContainer {
     val activity: FragmentActivity? get() = fragment.activity
 
-    override val fragment: F get() = coroutineContext[FragmentContext] as F
+    override val fragment: F get() = coroutineContext[FragmentContext]!!.fragment as F
 
     val fragmentManager: FragmentManager? get() = fragment.fragmentManager
 

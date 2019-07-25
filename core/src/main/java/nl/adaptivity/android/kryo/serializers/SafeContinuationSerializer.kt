@@ -8,6 +8,7 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 
 internal class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo, _SafeContinuation) {
 
+/*
     override fun write(kryo: Kryo, output: Output, obj: Any?) {
         val resultField = getField("result").field.apply { isAccessible=true }
         val resultValue = resultField.get(obj)
@@ -26,7 +27,9 @@ internal class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo
             resultField.set(obj, resultValue)
         }
     }
+*/
 
+/*
     @Suppress("UNCHECKED_CAST")
     override fun read(kryo: Kryo, input: Input, type: Class<Any>): Any? {
         val obj = super.read(kryo, input, type)
@@ -40,11 +43,14 @@ internal class SafeContinuationSerializer(kryo: Kryo): FieldSerializer<Any>(kryo
 
         return obj
     }
+*/
 }
 
 @Suppress("ObjectPropertyName")
-internal val _SafeContinuation = Class.forName("kotlin.coroutines.experimental.SafeContinuation")
+internal val _SafeContinuation = Class.forName("kotlin.coroutines.SafeContinuation")
+/*
 @Suppress("ObjectPropertyName")
 internal val _Resumed = _SafeContinuation.getDeclaredField("RESUMED").let { f -> f.isAccessible=true; f.get(null) }
 @Suppress("ObjectPropertyName")
 internal val _Undecided = _SafeContinuation.getDeclaredField("UNDECIDED").let { f -> f.isAccessible=true; f.get(null) }
+*/

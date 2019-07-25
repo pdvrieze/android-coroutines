@@ -51,7 +51,7 @@ class PlainCoroutineTest {
 //        val deserializedCoroutine = coroutine!!
         val deserializedCoroutine = kryo.readClassAndObject(Input(serialized)) as Continuation<Unit>
         val resultField = deserializedCoroutine::class.java.getDeclaredField("result").apply { isAccessible=true }
-        resultField.set(deserializedCoroutine, kotlin.coroutines.experimental.intrinsics.COROUTINE_SUSPENDED)
+        resultField.set(deserializedCoroutine, kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED)
 
         deserializedCoroutine.resume(Unit) // is not guaranteed to run here
 

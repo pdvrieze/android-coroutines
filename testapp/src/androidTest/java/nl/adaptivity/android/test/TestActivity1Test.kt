@@ -1,29 +1,27 @@
 package nl.adaptivity.android.test
 
 
-import android.content.Intent
-import android.support.test.espresso.Espresso.onView
-import android.support.test.espresso.Espresso.pressBack
-import android.support.test.espresso.action.ViewActions.*
-import android.support.test.espresso.assertion.ViewAssertions.matches
-import android.support.test.espresso.matcher.ViewMatchers.*
-import android.support.test.filters.LargeTest
-import android.support.test.rule.ActivityTestRule
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.pressBack
+import androidx.test.espresso.action.ViewActions.*
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.*
 import android.view.View
+import androidx.test.filters.LargeTest
+import androidx.test.rule.ActivityTestRule
+import androidx.test.runner.AndroidJUnit4
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import junit.framework.Assert.assertEquals
 import nl.adaptivity.android.kryo.LineOutput
 import nl.adaptivity.android.kryo.kryoAndroid
-import com.esotericsoftware.minlog.Log as KryoLog
 import org.hamcrest.Matchers.allOf
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
+import com.esotericsoftware.minlog.Log as KryoLog
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)

@@ -17,7 +17,7 @@ class ActivityCoroutineScopeWrapper<out A : Activity>(
 
     @Suppress("UNCHECKED_CAST")
     val activity: A
-        get() = coroutineContext[AndroidContext] as A
+        get() = coroutineContext[AndroidContext]!!.androidContext as A
 
     @Suppress("DEPRECATION")
     @Deprecated("Use function", ReplaceWith("fragmentManager()"))
@@ -29,7 +29,7 @@ class ActivityCoroutineScopeWrapper<out A : Activity>(
 
     override fun getAndroidContext() = activity
 
-    override val containerView: View? = activity.findViewById(android.R.id.content)
+    override val containerView: View? get() = activity.findViewById(android.R.id.content)
 
     fun <T : View> findViewById(@IdRes id: Int): T = activity.findViewById(id)
 

@@ -32,6 +32,8 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
                 register(Registration(type, kryo.pseudoObjectSerializer(FragmentContext.Key), NAME))
             c!=null && c.javaClass == type ->
                 register(Registration(type, ContextSerializer(context), NAME))
+            Thread::class.java.isAssignableFrom(type) ->
+                throw IllegalArgumentException("Serializing threads is never valid")
             Context::class.java.isAssignableFrom(type.superclass) ->
                 register(Registration(type, ContextSerializer(context), NAME))
             context is Activity && Fragment::class.java.isAssignableFrom(type.superclass) ->
@@ -44,6 +46,8 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
                 register(Registration(type, FieldSerializer<Any>(kryo, type).apply { setIgnoreSyntheticFields(false) }, NAME))
             AccountManager::class.java.isAssignableFrom(type) ->
                 register(Registration(type, AccountManagerSerializer(kryo, type, c), NAME))
+            type.superclass?.name=="kotlin.coroutines.jvm.internal.ContinuationImpl" ->
+                register(Registration(type, ContinuationImplSerializer(kryo, type), NAME))
             type.superclass?.name=="kotlin.coroutines.experimental.jvm.internal.CoroutineImpl" ->
                 register(Registration(type, CoroutineImplSerializer(kryo, type), NAME))
 // Requires the reflection library

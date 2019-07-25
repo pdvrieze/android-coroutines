@@ -1,7 +1,4 @@
 import com.android.build.gradle.internal.dsl.BuildType
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     id("com.android.application")
@@ -19,7 +16,7 @@ android {
         versionCode=1
         versionName="1.0"
 
-        testInstrumentationRunner="android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
 
     }
 

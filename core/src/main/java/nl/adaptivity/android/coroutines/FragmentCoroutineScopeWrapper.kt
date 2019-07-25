@@ -21,7 +21,7 @@ class FragmentCoroutineScopeWrapper<out F : Fragment>(
 ) : FragmentCoroutineScope<F>, LayoutContainer {
     val activity: Activity? get() = fragment.activity
 
-    override val fragment: F get() = coroutineContext[FragmentContext] as F
+    override val fragment: F get() = coroutineContext[FragmentContext]!!.fragment as F
 
     val fragmentManager: FragmentManager? get() = fragment.fragmentManager
 

@@ -29,6 +29,7 @@ fun kryoAndroid(context: Context?): Kryo = Kryo(AndroidKotlinResolver(context), 
 fun Kryo.registerAndroidSerializers() {
     instantiatorStrategy = KotlinObjectInstantiatorStrategy(Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy()))
 
+    //TODO no longer needed
     register(_SafeContinuation, SafeContinuationSerializer(this))
     /* TODO While this doesn't affect instantiation (The KotlinObjectStantiatorStrategy handles that)
      * this may be needed to not serialize/deserialize the actual pool state.
