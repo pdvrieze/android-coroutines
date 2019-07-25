@@ -6,10 +6,10 @@ import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.*
 
 object Versions {
-    val kotlin = "1.3.40"
+    val kotlin = "1.3.41"
     val kryo = "4.0.2"
     val coroutines = "1.2.0"
-    val androidBuildTools = "3.4.1"
+    val androidBuildTools = "3.4.2"
     val dokka = "0.9.16"
     val bintray = "1.8.3"
     val self = "0.7.990-SNAPSHOT"
