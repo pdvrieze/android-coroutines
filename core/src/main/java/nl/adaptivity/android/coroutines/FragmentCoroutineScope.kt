@@ -6,6 +6,7 @@ import android.view.View
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.coroutines.*
 import nl.adaptivity.android.coroutines.contexts.FragmentContext
+import java.lang.IllegalStateException
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.launch as originalLaunch
@@ -29,7 +30,7 @@ interface FragmentCoroutineScope<out F : Fragment> :
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend FragmentCoroutineScopeWrapper<F>.() -> Unit
     ): Job {
-        val extContext = context + coroutineContext[FragmentContext]!!
+        val extContext = context.ensureFragmentContext()
         return originalLaunch(extContext, start) { createScopeWrapper(this).block() }
     }
 
@@ -39,8 +40,18 @@ interface FragmentCoroutineScope<out F : Fragment> :
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend FragmentCoroutineScopeWrapper<F>.() -> R
     ): Deferred<R> {
-        val extContext = context + coroutineContext[FragmentContext]!!
+        val extContext = context.ensureFragmentContext()
         return originalAsync(extContext, start) { createScopeWrapper(this).block() }
+    }
+
+    fun CoroutineContext.ensureFragmentContext(): CoroutineContext {
+        val parentFragmentContext = coroutineContext[FragmentContext]
+        return when {
+            this[FragmentContext]!=null -> this
+            parentFragmentContext !=null -> this + parentFragmentContext
+            this is Fragment -> this + FragmentContext(this)
+            else -> throw IllegalStateException("No fragment present for fragment scope")
+        }
     }
 
 }

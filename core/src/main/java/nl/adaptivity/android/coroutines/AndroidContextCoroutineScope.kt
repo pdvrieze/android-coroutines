@@ -1,8 +1,11 @@
 package nl.adaptivity.android.coroutines
 
+import android.app.Fragment
 import android.content.Context
 import kotlinx.coroutines.*
 import nl.adaptivity.android.coroutines.contexts.AndroidContext
+import nl.adaptivity.android.coroutines.contexts.FragmentContext
+import java.lang.IllegalStateException
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.launch as originalLaunch
@@ -22,7 +25,7 @@ interface AndroidContextCoroutineScope<out C : Context, out S : WrappedContextCo
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend S.() -> Unit
     ): Job {
-        val extContext = context + coroutineContext[AndroidContext]!!
+        val extContext = context.ensureAndroidContext()
         return originalLaunch(extContext, start) { createScopeWrapper(this).block() }
     }
 
@@ -32,11 +35,21 @@ interface AndroidContextCoroutineScope<out C : Context, out S : WrappedContextCo
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend S.() -> R
     ): Deferred<R> {
-        val extContext = context + coroutineContext[AndroidContext]!!
+        val extContext = context.ensureAndroidContext()
         return originalAsync(
             extContext,
             start
         ) { createScopeWrapper(this).block() }
+    }
+
+    fun CoroutineContext.ensureAndroidContext(): CoroutineContext {
+        val parentFragmentContext = coroutineContext[AndroidContext]
+        return when {
+            this[AndroidContext]!=null -> this
+            parentFragmentContext !=null -> this + parentFragmentContext
+            this is Context -> this + AndroidContext(this)
+            else -> throw IllegalStateException("No context present for context scope")
+        }
     }
 
 }

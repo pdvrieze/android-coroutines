@@ -14,6 +14,7 @@ import nl.adaptivity.android.coroutines.contexts.AndroidContext
 import nl.adaptivity.android.coroutines.contexts.FragmentContext
 import nl.adaptivity.android.kryo.serializers.*
 import java.lang.ref.Reference
+import kotlin.coroutines.CoroutineContext
 
 open class AndroidKotlinResolver(protected val context: Context?) : DefaultClassResolver() {
 
@@ -30,6 +31,9 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
                 register(Registration(type, kryo.pseudoObjectSerializer(AndroidContext.Key), NAME))
             FragmentContext.Key::class.java == type ->
                 register(Registration(type, kryo.pseudoObjectSerializer(FragmentContext.Key), NAME))
+            "nl.adaptivity.android.coroutinesCompat.AppcompatFragmentContext\$Key" == type.name -> {
+                register(Registration(type, kryo.pseudoObjectSerializer(APPCOMPATFRAGMENTCONTEXT_KEY), NAME))
+            }
             c!=null && c.javaClass == type ->
                 register(Registration(type, ContextSerializer(context), NAME))
             Thread::class.java.isAssignableFrom(type) ->
@@ -60,5 +64,12 @@ open class AndroidKotlinResolver(protected val context: Context?) : DefaultClass
     companion object {
         const val TAG = "AndroidKotlinResolver"
         const val NAME = DefaultClassResolver.NAME.toInt()
+        val APPCOMPATFRAGMENTCONTEXT_CLASS = try {
+            Class.forName("nl.adaptivity.android.coroutinesCompat.AppcompatFragmentContext")
+        } catch (e: ClassNotFoundException) { null }
+        val APPCOMPATFRAGMENTCONTEXT_KEY: CoroutineContext.Key<*>? = APPCOMPATFRAGMENTCONTEXT_CLASS?.let { cl ->
+            val inst = cl.getDeclaredField("Key")
+            inst.get(null) as CoroutineContext.Key<*>
+        }
     }
 }

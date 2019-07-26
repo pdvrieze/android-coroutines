@@ -29,7 +29,7 @@ interface AppcompatFragmentCoroutineScope<out F : Fragment> :
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend AppcompatFragmentCoroutineScopeWrapper<F>.() -> Unit
     ): Job {
-        val extContext = context + coroutineContext[FragmentContext]!!
+        val extContext = context.ensureFragmentContext()
         return originalLaunch(extContext, start) { createScopeWrapper(this).block() }
     }
 
@@ -39,8 +39,20 @@ interface AppcompatFragmentCoroutineScope<out F : Fragment> :
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend AppcompatFragmentCoroutineScopeWrapper<F>.() -> R
     ): Deferred<R> {
-        val extContext = context + coroutineContext[FragmentContext]!!
+        val extContext = context.ensureFragmentContext()
         return originalAsync(extContext, start) { createScopeWrapper(this).block() }
+    }
+
+
+
+    fun CoroutineContext.ensureFragmentContext(): CoroutineContext {
+        val parentFragmentContext = coroutineContext[AppcompatFragmentContext]
+        return when {
+            this[AppcompatFragmentContext]!=null -> this
+            parentFragmentContext !=null -> this + parentFragmentContext
+            this is Fragment -> this + AppcompatFragmentContext(this)
+            else -> throw IllegalStateException("No fragment present for fragment scope")
+        }
     }
 
 }

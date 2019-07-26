@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import nl.adaptivity.android.coroutines.ActivityResult
 import nl.adaptivity.android.coroutines.ParcelableContinuation
 import nl.adaptivity.android.coroutines.RetainedContinuationFragment
-import nl.adaptivity.android.coroutines.contexts.FragmentContext
 import nl.adaptivity.android.coroutines.ensureRetainingFragment
 import nl.adaptivity.android.coroutines.impl.DelegateLayoutContainer
 import kotlin.coroutines.CoroutineContext
@@ -26,7 +25,7 @@ class AppcompatFragmentCoroutineScopeWrapper<out F : Fragment>(
 ) : AppcompatFragmentCoroutineScope<F>, LayoutContainer {
     val activity: FragmentActivity? get() = fragment.activity
 
-    override val fragment: F get() = coroutineContext[FragmentContext]!!.fragment as F
+    override val fragment: F get() = coroutineContext[AppcompatFragmentContext]!!.fragment as F
 
     val fragmentManager: FragmentManager? get() = fragment.fragmentManager
 
@@ -39,7 +38,7 @@ class AppcompatFragmentCoroutineScopeWrapper<out F : Fragment>(
     suspend fun startActivityForResult(intent: Intent): ActivityResult {
         return suspendCoroutine { continuation ->
             val fragment =
-                (continuation.context[FragmentContext]?.fragment
+                (continuation.context[AppcompatFragmentContext]?.fragment
                     ?: throw IllegalStateException("Missing fragment in context")) as Fragment
 
             val activity = activity
