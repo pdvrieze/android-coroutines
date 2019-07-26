@@ -6,6 +6,8 @@ import org.jetbrains.dokka.gradle.DokkaAndroidTask
 import org.jetbrains.dokka.gradle.LinkMapping
 import java.util.Date
 import java.net.URL
+import versions.*
+import libraries.*
 
 plugins {
     id("com.android.library")
@@ -17,7 +19,7 @@ plugins {
     idea
 }
 
-version = Versions.self
+version = selfVersion
 group = "net.devrieze"
 description = "Library to add coroutine support for Android flow"
 
@@ -30,12 +32,12 @@ repositories {
 
 
 android {
-    compileSdkVersion(Versions.compileSdk)
+    compileSdkVersion(compileSdk)
 
     defaultConfig {
-        minSdkVersion(Versions.minSdk)
-        targetSdkVersion(Versions.targetSdk)
-        versionName = Versions.self
+        minSdkVersion(minSdk)
+        targetSdkVersion(targetSdk)
+        versionName = selfVersion
     }
 
     compileOptions {
@@ -49,13 +51,13 @@ android {
 }
 
 dependencies {
-    implementation(Libraries.supportLib)
-    implementation(Libraries.kryo)
-    implementation(Libraries.kotlinlib)
-    implementation(Libraries.androidExtensionRuntime)
+    implementation(supportLibSpec)
+    implementation(kryoSpec)
+    implementation(kotlinlibSpec)
+    implementation(androidExtensionRuntimeSpec)
 
-    api(Libraries.coroutines)
-    api(Libraries.coroutinesAndroid)
+    api(coroutinesSpec)
+    api(coroutinesAndroidSpec)
 }
 
 val sourcesJar = task<Jar>("androidSourcesJar") {
@@ -94,11 +96,11 @@ afterEvaluate {
                 pom {
                     withXml {
                         dependencies {
-                            dependency(Libraries.kryo)
-                            dependency(Libraries.kotlinlib)
-                            dependency(Libraries.androidExtensionRuntime)
+                            dependency(kryoSpec)
+                            dependency(kotlinlibSpec)
+                            dependency(androidExtensionRuntimeSpec)
 
-                            dependency(Libraries.coroutinesAndroid, type = "jar")
+                            dependency(coroutinesAndroidSpec, type = "jar")
                         }
                     }
                 }

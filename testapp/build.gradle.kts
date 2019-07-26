@@ -1,4 +1,6 @@
 import com.android.build.gradle.internal.dsl.BuildType
+import libraries.*
+import versions.*
 
 plugins {
     id("com.android.application")
@@ -7,12 +9,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion(Versions.compileSdk)
+    compileSdkVersion(compileSdk)
 
     defaultConfig {
         applicationId= "uk.ac.bmth.aprog.testapp"
-        minSdkVersion(Versions.minSdk)
-        targetSdkVersion(Versions.targetSdk)
+        minSdkVersion(minSdk)
+        targetSdkVersion(targetSdk)
         versionCode=1
         versionName="1.0"
 
@@ -40,18 +42,18 @@ android {
 dependencies {
     implementation(project(":appcompat"))
 
-    implementation(Libraries.supportLib)
-    implementation(Libraries.androidExtensionRuntime)
+    implementation(supportLibSpec)
+    implementation(androidExtensionRuntimeSpec)
 
-    implementation(Libraries.constraintLayout)
-    implementation(Libraries.kotlinlib)
-    implementation(Libraries.kryo)
+    implementation(constraintLayoutSpec)
+    implementation(kotlinlibSpec)
+    implementation(kryoSpec)
 
-    testImplementation(Libraries.junit)
-//    testImplementation (Libraries.kryo)
-//    androidTestImplementation (Libraries.kryo)
-    androidTestRuntimeOnly(Libraries.androidExtensionRuntime)
-    useEspresso()
+    testImplementation(junitSpec)
+//    testImplementation (kryoSpec)
+//    androidTestImplementation (kryoSpec)
+    androidTestRuntimeOnly(androidExtensionRuntimeSpec)
+    useEspresso(project)
 }
 
 androidExtensions {

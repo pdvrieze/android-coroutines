@@ -1,16 +1,11 @@
-import com.android.build.gradle.LibraryExtension
 import com.jfrog.bintray.gradle.BintrayExtension
 import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
-import groovy.lang.Closure
-import groovy.util.Node
-import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.kotlin
-import org.gradle.kotlin.dsl.repositories
 import org.jetbrains.dokka.gradle.DokkaAndroidTask
 import org.jetbrains.dokka.gradle.LinkMapping
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import java.util.Date
-import Versions
+import versions.*
+import libraries.*
 
 plugins {
     id("com.android.library")
@@ -21,19 +16,19 @@ plugins {
     id("org.jetbrains.dokka-android")
 }
 
-version = Versions.self
+version = selfVersion
 group = "net.devrieze"
 description = "Extension for android coroutines that supports the appcompat library"
 
 projectRepositories()
 
 android {
-    compileSdkVersion(Versions.compileSdk)
+    compileSdkVersion(compileSdk)
 
     defaultConfig {
-        minSdkVersion(Versions.minSdk)
-        targetSdkVersion(Versions.targetSdk)
-        versionName = Versions.self
+        minSdkVersion(minSdk)
+        targetSdkVersion(targetSdk)
+        versionName = selfVersion
     }
 
     compileOptions {
@@ -48,10 +43,10 @@ android {
 }
 
 dependencies {
-    implementation(Libraries.supportLib)
+    implementation(supportLibSpec)
 
     implementation(kotlin("stdlib"))
-    implementation(kotlin("android-extensions-runtime", Versions.kotlin))
+    implementation(androidExtensionRuntimeSpec)
 
     api(project(":core"))
 }
@@ -88,8 +83,8 @@ afterEvaluate{
                 pom {
                     withXml {
                         dependencies {
-                            dependency("$groupId:android-coroutines:[$version]", type = "aar")
-                            dependency(Libraries.supportLib)
+                            dependency("$groupId:android-coroutinesSpec:[$version]", type = "aar")
+                            dependency(supportLibSpec)
                             // all other dependencies are transitive
                         }
                     }
