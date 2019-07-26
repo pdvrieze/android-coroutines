@@ -83,7 +83,7 @@ afterEvaluate{
                 pom {
                     withXml {
                         dependencies {
-                            dependency("$groupId:android-coroutinesSpec:[$version]", type = "aar")
+                            dependency("$groupId:android-coroutines:[$version]", type = "aar")
                             dependency(supportLibSpec)
                             // all other dependencies are transitive
                         }

@@ -50,6 +50,7 @@ dependencies {
     implementation(kryoSpec)
 
     testImplementation(junitSpec)
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
 //    testImplementation (kryoSpec)
 //    androidTestImplementation (kryoSpec)
     androidTestRuntimeOnly(androidExtensionRuntimeSpec)
