@@ -44,7 +44,7 @@ class ActivityCoroutineScopeWrapper<out A : Activity>(
     }
 
     @Suppress("unused")
-    suspend inline fun withActivity(body: A.() -> R): R {
+    suspend inline fun <R> withActivity(body: A.() -> R): R {
         return activity.body()
     }
 

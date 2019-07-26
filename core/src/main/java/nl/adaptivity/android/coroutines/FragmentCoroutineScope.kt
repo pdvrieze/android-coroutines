@@ -35,11 +35,11 @@ interface FragmentCoroutineScope<out F : Fragment> :
     }
 
 
-    fun <R> async(
+    fun <RES> async(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend FragmentCoroutineScopeWrapper<F>.() -> R
-    ): Deferred<R> {
+        block: suspend FragmentCoroutineScopeWrapper<F>.() -> RES
+    ): Deferred<RES> {
         val extContext = context.ensureFragmentContext()
         return originalAsync(extContext, start) { createScopeWrapper(this).block() }
     }

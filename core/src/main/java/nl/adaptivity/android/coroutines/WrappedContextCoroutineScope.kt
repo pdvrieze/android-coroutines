@@ -22,11 +22,11 @@ abstract class WrappedContextCoroutineScope<out C : Context, out S : WrappedCont
 
     override fun getAndroidContext(): C = coroutineContext[AndroidContext] as C
 
-    override fun <R> async(
+    override fun <RES> async(
         context: CoroutineContext,
         start: CoroutineStart,
-        block: suspend S.() -> R
-    ): Deferred<R> {
+        block: suspend S.() -> RES
+    ): Deferred<RES> {
         return originalAsync(
             context + coroutineContext[AndroidContext]!!,
             start

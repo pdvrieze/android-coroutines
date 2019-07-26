@@ -30,11 +30,11 @@ interface AndroidContextCoroutineScope<out C : Context, out S : WrappedContextCo
     }
 
 
-    fun <R> async(
+    fun <RES> async(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend S.() -> R
-    ): Deferred<R> {
+        block: suspend S.() -> RES
+    ): Deferred<RES> {
         val extContext = context.ensureAndroidContext()
         return originalAsync(
             extContext,
