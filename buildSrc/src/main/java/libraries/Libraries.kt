@@ -4,7 +4,7 @@ import org.gradle.api.Project
 import versions.*
 
 val Project.supportLibSpec get() = "com.android.support:appcompat-v7:$androidCompatVersion"
-val Project.junitSpec get() = "junitSpec:junit:$junitVersion"
+val Project.junitSpec get() = "junit:junit:$junitVersion"
 val Project.kryoSpec get() = "com.esotericsoftware:kryo:$kryoVersion"
 val Project.androidTestRunnerSpec get() = "androidx.test:runner:$androidTestSupportVersion"
 val Project.androidTestRulesSpec get() = "androidx.test:rules:$androidTestSupportVersion"
