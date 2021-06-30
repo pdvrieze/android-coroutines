@@ -1,18 +1,16 @@
 package uk.ac.bmth.aprog.testapp
 
-import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import kotlinx.coroutines.*
 import nl.adaptivity.android.kryo.kryoAndroid
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-
-import org.junit.Assert.*
-import org.objenesis.strategy.StdInstantiatorStrategy
 import java.io.ByteArrayOutputStream
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -26,17 +24,40 @@ class PlainCoroutineTest {
     }
 
     @Test
-    fun testClosureSerialization() = runBlocking {
+    fun testClosureImpl() {
+        lateinit var coroutine: Continuation<Int>
+        val deferred = GlobalScope.async(start = CoroutineStart.UNDISPATCHED) {
+            val s = "Hello"
+            val i1 = suspendCoroutine<Int> { cont ->
+                coroutine = cont
+            }
+            assertEquals(2, i1)
+            s
+        }
+
+        assertTrue(deferred.isActive)
+
+        coroutine.resume(2)
+
+//        assertTrue(deferred.isCompleted)
+
+        val s2 = runBlocking { deferred.await() }
+        assertEquals("Hello", s2)
+    }
+
+    @Test
+    fun testClosureSerialization() {
 //        val kryo = Kryo().apply { instantiatorStrategy = Kryo.DefaultInstantiatorStrategy(StdInstantiatorStrategy()) }
         val kryo = kryoAndroid
 
-        var coroutine: Continuation<Unit>? = null
+        lateinit var coroutine: Continuation<Int>
 
         // Create a coroutine and the suspend it.
         // It needs to run out of the blocking scope as it suspends. Otherwise it will never return.
         GlobalScope.async(start = CoroutineStart.UNDISPATCHED) {
             val s = "Hello"
-            suspendCoroutine<Unit> { cont -> coroutine = cont }
+            val i = suspendCoroutine<Int> { cont -> coroutine = cont }
+            assertEquals(3, i)
             s
         }
 
@@ -48,22 +69,22 @@ class PlainCoroutineTest {
         }
 
         val serialized = baos.toByteArray()
-//        val deserializedCoroutine = coroutine!!
-        val deserializedCoroutine = kryo.readClassAndObject(Input(serialized)) as Continuation<Unit>
-        val resultField = deserializedCoroutine::class.java.getDeclaredField("result").apply { isAccessible=true }
-        resultField.set(deserializedCoroutine, kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED)
+        val deserializedCoroutine = kryo.readClassAndObject(Input(serialized)) as Continuation<Int>
 
-        deserializedCoroutine.resume(Unit) // is not guaranteed to run here
+        deserializedCoroutine.resume(3) // is not guaranteed to run here
+        coroutine.resume(3)
 
-        val deferred = deserializedCoroutine.context[Job] as Deferred<String>
+        val deferredDeserialized = deserializedCoroutine.context[Job] as Deferred<String>
 
         val result = run {
             System.out.println("5")
-            deferred.await().apply {
-                System.out.println("6")
+            runBlocking {
+                deferredDeserialized.await().apply {
+                    System.out.println("6: ${this}")
+                }
             }
         }
-        System.out.println("5")
+        System.out.println("7")
 
         assertEquals("Hello", result)
 

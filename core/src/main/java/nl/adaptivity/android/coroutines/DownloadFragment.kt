@@ -11,11 +11,13 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.net.URI
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Fragment that encapsulates the state of downloading a file.
@@ -182,7 +184,7 @@ private fun Cursor.getUri(columnName: String) = URI.create(getString(getColumnIn
 private inline var Intent.downloadId: Long
     get() = getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
     set(value) {
-        extras.putLong(DownloadManager.EXTRA_DOWNLOAD_ID, value)
+        putExtra(DownloadManager.EXTRA_DOWNLOAD_ID, value)
     }
 
 private inline val Intent.isActionDownloadComplete get() = action == DownloadManager.ACTION_DOWNLOAD_COMPLETE

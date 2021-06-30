@@ -1,6 +1,6 @@
 import com.android.build.gradle.internal.dsl.BuildType
 import libraries.*
-import versions.*
+import versions.coroutinesVersion
 
 plugins {
     id("com.android.application")
@@ -8,13 +8,17 @@ plugins {
     id("kotlin-android-extensions")
 }
 
+val reqCompileSdkVersion:String by project
+val reqTargetSdkVersion:String by project
+val reqMinSdkVersion:String by project
+
 android {
-    compileSdkVersion(compileSdk)
+    compileSdkVersion(reqCompileSdkVersion.toInt())
 
     defaultConfig {
         applicationId= "uk.ac.bmth.aprog.testapp"
-        minSdkVersion(minSdk)
-        targetSdkVersion(targetSdk)
+        minSdkVersion(reqMinSdkVersion.toInt())
+        targetSdkVersion(reqTargetSdkVersion.toInt())
         versionCode=1
         versionName="1.0"
 
@@ -30,12 +34,14 @@ android {
     }
 
     compileOptions {
-        setTargetCompatibility("1.8")
-        setSourceCompatibility("1.8")
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     packagingOptions {
         pickFirst("META-INF/atomicfu.kotlin_module")
+        pickFirst("META-INF/AL2.0")
+        pickFirst("META-INF/LGPL2.1")
     }
 }
 

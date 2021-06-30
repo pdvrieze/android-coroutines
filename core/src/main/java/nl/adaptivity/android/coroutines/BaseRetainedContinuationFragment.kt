@@ -2,8 +2,6 @@ package nl.adaptivity.android.coroutines
 
 import android.app.Fragment
 import android.os.Bundle
-import kotlinx.coroutines.Job
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Base class for fragments that are used to store continuations.
@@ -14,7 +12,7 @@ open class BaseRetainedContinuationFragment<T> : Fragment() {
     @Deprecated("This is quite unsafe")
     protected val requestCode: Int get() = parcelableContinuations.firstOrNull()?.requestCode ?: -1
     val lastResultCode: Int get() {
-        return parcelableContinuations.maxBy { it.requestCode }?.requestCode ?: (COROUTINEFRAGMENT_RESULTCODE_START-1)
+        return parcelableContinuations.maxByOrNull { it.requestCode }?.requestCode ?: (COROUTINEFRAGMENT_RESULTCODE_START-1)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

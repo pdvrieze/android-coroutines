@@ -1,5 +1,3 @@
-import org.gradle.api.tasks.wrapper.Wrapper
-
 /*
  * Copyright (c) 2016.
  *
@@ -23,5 +21,5 @@ plugins {
 }
 
 tasks.named<Wrapper>("wrapper") {
-    gradleVersion = "5.4.1"
+    gradleVersion = "7.1"
 }

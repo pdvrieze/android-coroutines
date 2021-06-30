@@ -1,19 +1,13 @@
-import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
-import org.gradle.kotlin.dsl.kotlin
-import org.jetbrains.dokka.gradle.DokkaAndroidTask
-import org.jetbrains.dokka.gradle.LinkMapping
-import java.util.Date
-import versions.*
-import libraries.*
+import libraries.androidExtensionRuntimeSpec
+import libraries.supportLibSpec
+import versions.selfVersion
 
 plugins {
     id("com.android.library")
     kotlin("android")
     id("kotlin-android-extensions")
     id("maven-publish")
-    id("com.jfrog.bintray")
-    id("org.jetbrains.dokka-android")
+    id("org.jetbrains.dokka")
 }
 
 version = selfVersion
@@ -22,18 +16,22 @@ description = "Extension for android coroutines that supports the appcompat libr
 
 projectRepositories()
 
+val reqCompileSdkVersion:String by project
+val reqTargetSdkVersion:String by project
+val reqMinSdkVersion:String by project
+
 android {
-    compileSdkVersion(compileSdk)
+    compileSdkVersion(reqCompileSdkVersion.toInt())
 
     defaultConfig {
-        minSdkVersion(minSdk)
-        targetSdkVersion(targetSdk)
+        minSdkVersion(reqMinSdkVersion.toInt())
+        targetSdkVersion(reqTargetSdkVersion.toInt())
         versionName = selfVersion
     }
 
     compileOptions {
-        setSourceCompatibility(JavaVersion.VERSION_1_8)
-        setTargetCompatibility(JavaVersion.VERSION_1_8)
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     packagingOptions {
@@ -60,14 +58,17 @@ androidExtensions {
     isExperimental = true
 }
 
-tasks.withType<DokkaAndroidTask> {
-    linkMappings.add(LinkMapping().apply {
-        dir="src/main/java"
-        url = "https://github.com/pdvrieze/android-coroutines/tree/master/appcompat/src/main/java"
-        suffix = "#L"
-    })
-    outputFormat = "html"
-}
+//tasks.withType<DokkaTask> {
+//    dokkaSourceSets.all {
+//
+//    }
+////    linkMappings.add(LinkMapping().apply {
+////        dir="src/main/java"
+////        url = "https://github.com/pdvrieze/android-coroutines/tree/master/appcompat/src/main/java"
+////        suffix = "#L"
+////    })
+////    outputFormat = "html"
+//}
 
 afterEvaluate{
     publishing {
@@ -93,32 +94,4 @@ afterEvaluate{
         }
     }
 
-    bintray {
-        if (rootProject.hasProperty("bintrayUser")) {
-            user = rootProject.property("bintrayUser") as String?
-            key = rootProject.property("bintrayApiKey") as String?
-        }
-
-        setPublications("MyPublication")
-
-        pkg(closureOf<BintrayExtension.PackageConfig> {
-            repo = "maven"
-            name = "android-coroutines-appcompat"
-            userOrg = "pdvrieze"
-            setLicenses("Apache-2.0")
-            vcsUrl = "https://github.com/pdvrieze/android-coroutines.git"
-
-            version.apply {
-                name = project.version as String
-                desc = "Context capture is still a major issue, try to provide wrappers to prevent this."
-                released = Date().toString()
-                vcsTag = "v$version"
-            }
-        })
-    }
-}
-
-
-tasks.withType<BintrayUploadTask> {
-    dependsOn(sourcesJar)
 }

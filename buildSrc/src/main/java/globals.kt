@@ -4,7 +4,9 @@ import libraries.espressoCoreSpec
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.DependencyHandlerScope
+import org.gradle.kotlin.dsl.maven
+import org.gradle.kotlin.dsl.repositories
 
 private fun DependencyHandler.androidTestImplementation(dependencyNotation: Any): Dependency? =
         add("androidTestImplementation", dependencyNotation)
@@ -22,7 +24,7 @@ fun DependencyHandlerScope.useEspresso(project: Project) {
 fun Project.projectRepositories() {
     repositories {
         mavenLocal()
-        jcenter()
+        mavenCentral()
         google()
         maven(url = "https://dl.bintray.com/kotlin/kotlin-eap")
     }
