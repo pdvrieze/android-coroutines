@@ -15,13 +15,21 @@ import org.objenesis.strategy.StdInstantiatorStrategy
  * Get a Kryo serializer for a context-less application. For serialization this should not make
  * a difference, but for deserialization any contexts present in the state will lead to failure.
  */
-val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceResolver()).apply { registerAndroidSerializers() }
+val kryoAndroid get(): Kryo = Kryo(AndroidKotlinResolver(null), MapReferenceResolver()).apply {
+    registerAndroidSerializers()
+
+    fieldSerializerConfig.isIgnoreSyntheticFields = false
+}
 
 /**
  * Get a Kryo serializer that handles Android contexts special. It allows dynamic replacement of
  * markers indicating a context with the passed in context (or application context if that applies).
  */
-fun kryoAndroid(context: Context?): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply { registerAndroidSerializers() }
+fun kryoAndroid(context: Context?): Kryo = Kryo(AndroidKotlinResolver(context), MapReferenceResolver()).apply {
+    registerAndroidSerializers()
+
+    fieldSerializerConfig.isIgnoreSyntheticFields = false
+}
 
 /**
  * Extension function

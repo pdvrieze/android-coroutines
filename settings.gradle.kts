@@ -1,11 +1,10 @@
-import versions.*
-
-val androidBuildToolsVersion: String by settings
-val kotlinVersion: String by settings
-val dokkaVersion: String by settings
-val bintrayVersion: String by settings
 
 pluginManagement {
+    val androidBuildToolsVersion: String by settings
+    val kotlinVersion: String by settings
+    val dokkaVersion: String by settings
+    val bintrayVersion: String by settings
+
     repositories {
         gradlePluginPortal()
         google()
@@ -26,9 +25,10 @@ pluginManagement {
                     val ver = requested.version ?: kotlinVersion
                     useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${ver}");
                 }
-                "org.jetbrains.dokka-android" -> {
+                "org.jetbrains.dokka" -> {
                     val ver = requested.version ?: dokkaVersion
-                    useModule("org.jetbrains.dokka:dokka-android-gradle-plugin:${ver}")
+                    useVersion(ver)
+//                    useModule("${requested.module}:${ver}")
                 }
                 "com.jfrog.bintray" -> {
                     val ver = requested.version ?: bintrayVersion
